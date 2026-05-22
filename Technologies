@@ -1,0 +1,5 @@
+gRPC is worth mentioning for internal service-to-service communication when performance is critical. 
+It uses binary serialization and HTTP/2, making it significantly faster than JSON over HTTP. 
+But you won't use it for public-facing APIs 
+because browsers don't natively support gRPC (gRPC-Web exists as a workaround, 
+but it requires a proxy and doesn't support all gRPC features). 
