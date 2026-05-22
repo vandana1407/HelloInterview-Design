@@ -3,3 +3,10 @@ It uses binary serialization and HTTP/2, making it significantly faster than JSO
 But you won't use it for public-facing APIs 
 because browsers don't natively support gRPC (gRPC-Web exists as a workaround, 
 but it requires a proxy and doesn't support all gRPC features). 
+
+
+Load balancing is another area interviewers love to probe. Layer 7 load balancers operate at the application level and 
+can route based on the actual HTTP request content. You can send API calls to one service and web page requests to another. 
+Layer 4 load balancers work at the TCP level and are faster but dumber. 
+They just distribute connections without looking at the content. 
+For WebSockets, you typically need Layer 4 balancing because you're maintaining a persistent TCP connection.
