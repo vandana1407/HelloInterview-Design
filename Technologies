@@ -10,3 +10,13 @@ can route based on the actual HTTP request content. You can send API calls to on
 Layer 4 load balancers work at the TCP level and are faster but dumber. 
 They just distribute connections without looking at the content. 
 For WebSockets, you typically need Layer 4 balancing because you're maintaining a persistent TCP connection.
+
+For geospatial queries in Postgres, PostGIS is a popular extension.
+
+If Redis goes down, every request suddenly hits your database. 
+Can it handle that traffic spike? This is called a cache stampede and it can take down your whole system. Some approaches include keeping a small in-process cache
+as a fallback, using circuit breakers to prevent overwhelming the database, or accepting degraded performance until Redis comes back up.
+
+Latency num ers
+Memory access takes nanoseconds. SSD reads take microseconds. Network calls within a data center take 1-10 milliseconds. 
+Cross-continent calls take tens to hundreds of milliseconds.
