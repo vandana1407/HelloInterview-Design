@@ -80,6 +80,18 @@ handling packet forwarding between networks, and providing best-effort delivery 
 Transport Layer (Layer 4)
 At this layer, we have TCP, QUIC, and UDP, which provide end-to-end communication services. 
 Think of them like a layer that provides features like reliability, ordering, and flow control on top of the network layer.
+UDP - 
+User Datagram Protocol (UDP) is the machinegun of protocols. It offers few features on top of IP but is very fast. 
+Spray and pray is the right way to think about this. It provides a simpler, connectionless service with no guarantees of delivery, ordering, or duplicate protection.
+Key characteristics of UDP include:
+    Connectionless: No handshake or connection setup
+    No guarantee of delivery: Packets may be lost without notification
+    No ordering: Packets may arrive in a different order than sent
+    Lower latency: Less overhead means faster transmission
+UDP is perfect for applications where speed is more important than reliability, such as live video streaming, online gaming, VoIP, and DNS lookups
+For VOIP as an example, the client might just drop the occasional packet leading to a hiccup in the audio but overall the conversation is still intelligible. 
+This is vastly preferable to retransmitting those lost packets and clogging up the network with ACKs.
+
 
 Application Layer (Layer 7)
 At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) 
