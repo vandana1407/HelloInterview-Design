@@ -92,6 +92,19 @@ UDP is perfect for applications where speed is more important than reliability, 
 For VOIP as an example, the client might just drop the occasional packet leading to a hiccup in the audio but overall the conversation is still intelligible. 
 This is vastly preferable to retransmitting those lost packets and clogging up the network with ACKs.
 
+TCP - 
+Transmission Control Protocol (TCP) is the workhorse of the internet. It provides reliable, ordered, and error-checked delivery of data. 
+It establishes a connection through a three-way handshake and maintains that connection throughout the communication session.
+is a stateful connection between the client and server — it also gives us a basis to talk about ordering: two messages sent in the same stream/connection will arrive in the same order. 
+TCP will ensure that recipients of messages acknowledge their receipt and, if they don't, will retransmit the message until it is acknowledged.
+Key Characteristics of TCP
+    Connection-oriented: Establishes a dedicated connection before data transfer
+    Reliable delivery: Guarantees that data arrives in order and without errors
+    Flow control: Prevents overwhelming receivers with too much data
+    Congestion control: Adapts to network congestion to prevent collapse
+
+a web-based video conferencing app might use TCP/HTTP for signaling and authentication but UDP/WebRTC for the actual audio/video streams.
+
 
 Application Layer (Layer 7)
 At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) 
