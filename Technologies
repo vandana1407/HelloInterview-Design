@@ -10,6 +10,8 @@ can route based on the actual HTTP request content. You can send API calls to on
 Layer 4 load balancers work at the TCP level and are faster but dumber. 
 They just distribute connections without looking at the content. 
 For WebSockets, you typically need Layer 4 balancing because you're maintaining a persistent TCP connection.
+The most common load balancers are AWS Elastic Load Balancer (a hosted offering from AWS), NGINX (an open-source webserver frequently used as a load balancer), 
+and HAProxy (a popular open-source load balancer). 
 
 For geospatial queries in Postgres, PostGIS is a popular extension.
 
