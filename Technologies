@@ -59,3 +59,6 @@ Message Queues
     - Growing consumer lag
 
 
+
+The most common API gateways are AWS API Gateway, Kong, and Apigee. 
+
