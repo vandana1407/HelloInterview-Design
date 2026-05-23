@@ -107,7 +107,9 @@ a web-based video conferencing app might use TCP/HTTP for signaling and authenti
 
 
 Application Layer (Layer 7)
-At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) 
+At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC)
+http/https - 
+It's a request-response protocol where clients send requests to servers, and servers respond with the requested data.
 
 
 what happens when we get a web request - 
