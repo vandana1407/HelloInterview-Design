@@ -14,6 +14,7 @@ The most common load balancers are AWS Elastic Load Balancer (a hosted offering 
 and HAProxy (a popular open-source load balancer). 
 
 For geospatial queries in Postgres, PostGIS is a popular extension.
+PostgreSQL with PostGIS extensions or Redis' geospatial data type, or dedicated solutions like Elasticsearch with geo-queries enabled.
 
 If Redis goes down, every request suddenly hits your database. 
 Can it handle that traffic spike? This is called a cache stampede and it can take down your whole system. Some approaches include keeping a small in-process cache
@@ -65,4 +66,8 @@ Message Queues
 The most common API gateways are AWS API Gateway, Kong, and Apigee. 
 
 Some of the most popular CDNs are Cloudflare, Akamai, and Amazon CloudFront. 
+
+optimize read performance within your database through indexing and denormalization, scale horizontally with read replicas, then add external caching layers like Redis and CDNs.
+
+The Scaling Writes pattern addresses write bottlenecks through sharding, batching, and intelligent load management.
 
