@@ -71,3 +71,16 @@ optimize read performance within your database through indexing and denormalizat
 
 The Scaling Writes pattern addresses write bottlenecks through sharding, batching, and intelligent load management.
 
+
+Network Essentials
+Network Layer (Layer 3)
+At this layer is IP, the protocol that handles routing and addressing. It's responsible for breaking the data into packets, 
+handling packet forwarding between networks, and providing best-effort delivery to any destination IP address on the network.
+
+Transport Layer (Layer 4)
+At this layer, we have TCP, QUIC, and UDP, which provide end-to-end communication services. 
+Think of them like a layer that provides features like reliability, ordering, and flow control on top of the network layer.
+
+Application Layer (Layer 7)
+At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) 
+
