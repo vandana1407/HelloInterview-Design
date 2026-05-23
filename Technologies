@@ -8,7 +8,15 @@ but it requires a proxy and doesn't support all gRPC features).
 Load balancing is another area interviewers love to probe. Layer 7 load balancers operate at the application level and 
 can route based on the actual HTTP request content. You can send API calls to one service and web page requests to another. 
 Layer 4 load balancers work at the TCP level and are faster but dumber. 
-They just distribute connections without looking at the content. 
+They just distribute connections without looking at the content. Layer 4 load balancers operate at the transport layer (TCP/UDP). 
+They make routing decisions based on network information like IP addresses and ports, without looking at the actual content of the packets.ex - amazon network load balancer(NLB)
+Layer 4 load balancers have some key characteristics, they ...
+    Maintain persistent TCP connections between client and server.
+    Are fast and efficient due to minimal packet inspection.
+    Cannot make routing decisions based on application data.
+    Are typically used when raw performance is the priority.
+For example, if a client establishes a TCP connection through an L4 load balancer, that same server will handle 
+all subsequent requests within that TCP session. This makes L4 load balancers particularly well-suited for protocols that require persistent connections, like WebSocket connections.
 For WebSockets, you typically need Layer 4 balancing because you're maintaining a persistent TCP connection.
 The most common load balancers are AWS Elastic Load Balancer (a hosted offering from AWS), NGINX (an open-source webserver frequently used as a load balancer), 
 and HAProxy (a popular open-source load balancer). 
@@ -137,6 +145,55 @@ Now with all good hacks, SSE comes with some acute limitations. We can't keep an
 or a middle box proxy) will close down the connection. So the SSE standard defines the behavior of an EventSource object that, once the connection is closed, will automatically 
 reconnect with the ID of the last message received. Servers are expected to keep track of prior messages that may have been missed while the client was disconnected and resend them.
 SSE useful in system design interviews in situations where you want clients to get notifications or events as soon as they happen
+
+web sockets  
+Unlike HTTP's request-response model, WebSockets enable servers to push data to clients 
+without being prompted by a new request. Similarly clients can push data back to the server without the same wait.
+WebSockets are initiated via an HTTP "upgrade" protocol, which allows an existing TCP connection to change L7 protocols. This is super convenient because it means 
+you can utilize some of the existing HTTP session information (e.g. cookies, headers, etc.) to your advantage.
+Here's how it works:
+    Client initiates WebSocket handshake over HTTP (with a backing TCP connection)
+    Connection upgrades to WebSocket protocol, WebSocket takes over the TCP connection
+    Both client and server can send binary messages to each other over the connection
+    The connection stays open until explicitly closed
+WebSockets don't dictate an application protocol, you effectively have a channel where you can send binary packets to the server from the client and vice versa. 
+This means you'll need some way of defining what it is your client and server are exchanging. 
+For many WebSocket applications, simple serialized JSON messages are a great option! This also gives you a chance to define the API of your service for your design:
+wss:// /tickers
+Received:
+{
+  msgType: "tickerUpdate"
+  ticker: "xyz"
+  valueInCents: 1030
+}
+Sent:
+{
+  action: "subscribe"
+  ticker: "xyz"
+}
+{
+  action: "unsubscribe"
+  ticker: "xyz"
+}
+WebSockets are powerful, but the infra required to support them can be expensive and the overhead of stateful connections (especially at scale) 
+
+WEbRTC - 
+WebRTC enables direct peer-to-peer communication between browsers without requiring an intermediary server for the data exchange.
+WebRTC can be perfect for collaborative applications like document editors and is especially useful for video/audio calling and conferencing applications.
+based on UDC
+With WebRTC, clients talk to a central "signaling server" which keeps track of which peers are available together with their connection information. 
+Once a client has the connection information for another peer, they can try to establish a direct connection without going through any intermediary servers.
+In practice, most clients don't allow inbound connections for security reasons and the majority of users are behind a NAT (network address translation) 
+device which keeps them from being connected to directly. So if we stopped there, most peers wouldn't be able to "speak" to each other.
+The WebRTC standard includes two methods to work around these restrictions:
+    STUN: "Session Traversal Utilities for NAT" is a protocol and a set of techniques like "hole punching" which allows peers to establish publically routable addresses and ports.
+    TURN: "Traversal Using Relays around NAT" is effectively a relay service, a way to bounce requests through a central server which can then be routed to the appropriate peer.
+There's effectively 4 steps to a WebRTC connection:
+    Clients connect to a central signaling server to learn about their peers.
+    Clients reach out to a STUN server to get their public IP address and port.
+    Clients share this information with each other via the signaling server.
+    Clients establish a direct peer-to-peer connection and start sending data.
+
 
 what happens when we get a web request - 
 First, we use DNS to convert a human-readable domain name like hellointerview.com into an IP address like 32.42.52.62
