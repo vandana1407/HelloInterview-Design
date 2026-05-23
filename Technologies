@@ -110,7 +110,33 @@ Application Layer (Layer 7)
 At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC)
 http/https - 
 It's a request-response protocol where clients send requests to servers, and servers respond with the requested data.
+HTTP is a stateless protocol, meaning that each request is independent and the server doesn't need to maintain any information about previous requests. 
+    GET: Request data from the server. GET requests should be idempotent and don't have a body.
+    POST: Send data to the server.
+    PUT: Update data on the server.
+    PATCH: Update a resource partially.
+    DELETE: Delete data from the server. DELETE requests should be idempotent.
 
+GraphQL solves these problems by allowing the frontend team to flexibly query the backend for exactly the data they need. The backend 
+can then respond with the data in the shape that the frontend needs it. This is a great fit for mobile apps and other use-cases where you want to reduce the amount of data transferred.
+
+gRPC is a high-performance RPC (Remote Procedure Call) framework from Google (the "g") that uses HTTP/2 and Protocol Buffers.
+most important thing to know is that it's a binary protocol that's faster and more efficient than JSON over HTTP
+
+Server-Sent Events (SSE):many applications need to "push" data to clients in a more streaming fashion. While gRPC does support streaming, 
+it's not ideal for external APIs due to limited support (e.g. no browsers support gRPC today). 
+Server-Sent Events (SSE) is a spec defined on top of HTTP that allows a server to push many messages to the client over a single HTTP connection.
+with SSE, the server can push many messages as "chunks" in a single response from the server:
+data: {"id": 1, "timestamp": "2025-01-01T00:00:00Z", "description": "Event 1"}
+data: {"id": 2, "timestamp": "2025-01-01T00:00:01Z", "description": "Event 2"}
+...
+data: {"id": 100, "timestamp": "2025-01-01T00:00:10Z", "description": "Event 100"}
+Each line here is received as a separate message from the server. The client can then process each message as it comes in. It's still one big HTTP response (same TCP connection), 
+but it comes in over many smaller packets and clients are expected to process each line of the body individually to allow them to react to the data as it comes in.
+Now with all good hacks, SSE comes with some acute limitations. We can't keep an SSE connection open for too long because the server (or the load balancer, 
+or a middle box proxy) will close down the connection. So the SSE standard defines the behavior of an EventSource object that, once the connection is closed, will automatically 
+reconnect with the ID of the last message received. Servers are expected to keep track of prior messages that may have been missed while the client was disconnected and resend them.
+SSE useful in system design interviews in situations where you want clients to get notifications or events as soon as they happen
 
 what happens when we get a web request - 
 First, we use DNS to convert a human-readable domain name like hellointerview.com into an IP address like 32.42.52.62
