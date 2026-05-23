@@ -21,6 +21,29 @@ For WebSockets, you typically need Layer 4 balancing because you're maintaining 
 The most common load balancers are AWS Elastic Load Balancer (a hosted offering from AWS), NGINX (an open-source webserver frequently used as a load balancer), 
 and HAProxy (a popular open-source load balancer). 
 
+Layer 7 load balancers operate at the application layer, understanding protocols like HTTP. 
+They can examine the actual content of each request and make more intelligent routing decisions.
+Layer 7 load balancers have some key characteristics, they ...
+    Terminate incoming connections and create new ones to backend servers.
+    Can route based on request content (URL, headers, cookies, etc.).
+    More CPU-intensive due to packet inspection.
+    Provide more flexibility and features.
+    Better suited for HTTP-based traffic.
+
+If a server loses power or crashes, the load balancer stops routing traffic to it until it recovers.
+To do this, load balancers use health checks. Health checks are a way for the load balancer to determine if a server is healthy. 
+They can be configured to check the server at different intervals and with different protocols.
+
+Load Balancing Algorithms
+The other benefit of a dedicated load balancer is that we have more choices over the algorithm used to distribute traffic.
+    Round Robin: Requests are distributed sequentially across servers
+    Random: Requests are distributed randomly across servers
+    Least Connections: Requests go to the server with the fewest active connections
+    Least Response Time: Requests go to the server with the fastest response time
+    IP Hash: Client IP determines which server receives the request (useful for session persistence)
+
+Enterprise hardware load balancers can scale to support 100's of millions of requests per second, whereas software load balancers are more limited.
+
 For geospatial queries in Postgres, PostGIS is a popular extension.
 PostgreSQL with PostGIS extensions or Redis' geospatial data type, or dedicated solutions like Elasticsearch with geo-queries enabled.
 
@@ -210,4 +233,12 @@ FIN: The client sends a FIN (finish) packet to the server to terminate the conne
 ACK: The server acknowledges the FIN packet with an ACK.
 FIN: The server sends a FIN packet to the client to terminate its side of the connection.
 ACK: The client acknowledges the server's FIN packet with an ACK.
+
+Reliability - 
+Circuit breakers provide numerous advantages:
+    Fail Fast: Quickly reject requests to failing services instead of waiting for timeouts
+    Reduce Load: Prevent overwhelming already struggling services with more requests
+    Self-Healing: Automatically test recovery without full traffic load
+    Improved User Experience: Provide fast fallbacks instead of hanging UI
+    System Stability: Prevent failures in one service from affecting the entire system
 
