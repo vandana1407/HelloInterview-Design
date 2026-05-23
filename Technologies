@@ -142,17 +142,55 @@ At the final layer are the application protocols like DNS, HTTP, Websockets, Web
 http/https - 
 It's a request-response protocol where clients send requests to servers, and servers respond with the requested data.
 HTTP is a stateless protocol, meaning that each request is independent and the server doesn't need to maintain any information about previous requests. 
-    GET: Request data from the server. GET requests should be idempotent and don't have a body.
-    POST: Send data to the server.
-    PUT: Update data on the server.
-    PATCH: Update a resource partially.
-    DELETE: Delete data from the server. DELETE requests should be idempotent.
+    GET: Request data from the server. GET requests should be idempotent and don't have a body.idempotent
+    POST: Send data to the server. not idempotent
+    PUT: Update data on the server. PUT replaces an entire resource with what you send, or creates it if it doesn't exist. If you're updating a user's profile completely, 
+PUT to /users/{id} with the full user object. Unlike POST, PUT is idempotent, so sending the same data multiple times results in the same final state.
+    PATCH: Update a resource partially. Unlike PUT, PATCH is not guaranteed to be idempotent - the result depends on how you implement it. 
+A PATCH that says "set email to X" is idempotent, but a PATCH that says "append to list" is not.
+    DELETE: Delete data from the server. DELETE requests are idempotent. first call might return 204, subsequent calls might return 404)
+GET, PUT, and DELETE are idempotent because calling them multiple times doesn't change the final result. POST and PATCH are not guaranteed to be idempotent, 
+which matters when networks fail and clients retry requests. You don't want duplicate bookings from a retry.
 
 GraphQL solves these problems by allowing the frontend team to flexibly query the backend for exactly the data they need. The backend 
 can then respond with the data in the shape that the frontend needs it. This is a great fit for mobile apps and other use-cases where you want to reduce the amount of data transferred.
+But this flexibility creates the N+1 problem, the biggest GraphQL gotcha. When a client queries events with their venues, you might execute one query for events, then N separate queries for each venue. 
+With 100 events, that's 101 database queries instead of 2. The solution is batching/dataloader patterns that group related queries together, but it adds complexity you don't have with REST.
+GraphQL also handles authorization differently. Instead of securing entire endpoints like REST, you secure individual fields. 
+A user might see an event's name and date but not the venue data. You can control this at the field level in your schema resolvers.
 
 gRPC is a high-performance RPC (Remote Procedure Call) framework from Google (the "g") that uses HTTP/2 and Protocol Buffers.
 most important thing to know is that it's a binary protocol that's faster and more efficient than JSON over HTTP
+examples =
+// Instead of GET /events/123
+getEvent(eventId: "123")
+
+// Instead of POST /events/123/bookings
+createBooking(eventId: "123", userId: "456", tickets: [...])
+
+// Instead of GET /events/123/tickets
+getAvailableTickets(eventId: "123", section: "VIP")
+The most popular RPC protocol today is gRPC, which uses Protocol Buffers for serialization and HTTP/2 for transport. 
+Another notable RPC framework is Apache Thrift, originally developed at Facebook and now open source, which supports multiple programming languages and serialization formats.\
+gRPC uses Protocol Buffers (protobuf) to define service contracts. You write a .proto file that describes your service methods and data structures:
+service TicketService {
+  rpc GetEvent(GetEventRequest) returns (Event);
+  rpc CreateBooking(CreateBookingRequest) returns (Booking);
+  rpc GetAvailableTickets(GetTicketsRequest) returns (TicketList);
+}
+
+message GetEventRequest {
+  string event_id = 1;
+}
+
+message Event {
+  string id = 1;
+  string name = 2;
+  int64 date = 3;
+  Venue venue = 4;
+}
+From this single definition, gRPC generates client and server code in multiple programming languages. 
+This means your Go backend service and your Java payment service can communicate with compile-time type safety, catching mismatches before deployment.
 
 Server-Sent Events (SSE):many applications need to "push" data to clients in a more streaming fashion. While gRPC does support streaming, 
 it's not ideal for external APIs due to limited support (e.g. no browsers support gRPC today). 
@@ -235,6 +273,7 @@ FIN: The server sends a FIN packet to the client to terminate its side of the co
 ACK: The client acknowledges the server's FIN packet with an ACK.
 
 Reliability - 
+Circuit breakers can be a great response when an interviewer is deep-diving on reliability, failure modes, or disaster recovery.
 Circuit breakers provide numerous advantages:
     Fail Fast: Quickly reject requests to failing services instead of waiting for timeouts
     Reduce Load: Prevent overwhelming already struggling services with more requests
