@@ -84,3 +84,20 @@ Think of them like a layer that provides features like reliability, ordering, an
 Application Layer (Layer 7)
 At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) 
 
+
+what happens when we get a web request - 
+First, we use DNS to convert a human-readable domain name like hellointerview.com into an IP address like 32.42.52.62
+DNS Resolution: The client starts by resolving the domain name of the website to an IP address using DNS (Domain Name System).
+TCP Handshake: The client initiates a TCP connection with the server using a three-way handshake:
+SYN: The client sends a SYN (synchronize) packet to the server to request a connection.
+SYN-ACK: The server responds with a SYN-ACK (synchronize-acknowledge) packet to acknowledge the request.
+ACK: The client sends an ACK (acknowledge) packet to establish the connection.
+HTTP Request: Once the TCP connection is established, the client sends an HTTP GET request to the server to request the web page.
+Server Processing: The server processes the request, retrieves the requested web page, and prepares an HTTP response. (This is usually the only latency most SWE's think about and control!)
+HTTP Response: The server sends the HTTP response back to the client, which includes the requested web page content.
+TCP Teardown: After the data transfer is complete, the client and server close the TCP connection using a four-way handshake:
+FIN: The client sends a FIN (finish) packet to the server to terminate the connection.
+ACK: The server acknowledges the FIN packet with an ACK.
+FIN: The server sends a FIN packet to the client to terminate its side of the connection.
+ACK: The client acknowledges the server's FIN packet with an ACK.
+
