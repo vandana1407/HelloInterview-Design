@@ -364,3 +364,43 @@ Instead of one query, you suddenly have hundreds or thousands hitting the databa
 solution - 
 Request coalescing (also called single flight) lets only one request rebuild the entry when it expires while other concurrent requests wait for that result, 
 preventing a flood of simultaneous database queries. Proactively refreshing the entry before it expires (cache warming) is another good approach.
+
+shrading - 
+Here's what makes a good shard key:
+    High cardinality: The key should have many unique values. 
+        Sharding by a boolean field (true/false) means you can only have two shards max, which defeats the purpose. 
+        Sharding by user ID when you have millions of users gives you plenty of room to distribute data.
+    Even distribution: Values should spread evenly across shards. If you shard by country and 90% of your users are in the US, that shard will be massively larger than the others. 
+        User ID usually distributes well. Creation timestamps can work if new records don't all pile onto the most recent shard.
+    Aligns with queries: Your most common queries should ideally hit just one shard. If you shard users by user_id, queries like "get user profile" or "get user's orders" 
+        hit a single shard. Queries that span all shards become expensive.
+
+bad shrad keys - 
+bad ones could be:
+🔴 is_premium (boolean): Only two possible values means only two shards. One shard gets all premium users, the other gets free users. If most users are free, that shard is overloaded.
+🔴 created_at for a growing table: All new writes go to the most recent shard. That shard becomes a hot spot for writes while older shards handle almost no traffic.
+
+Shrading - 
+Most modern distributed databases handle sharding automatically.
+Common NoSQL databases like Cassandra, DynamoDB, and MongoDB all let you specify a partition key and handle the rest, but they do not all use the same distribution mechanism:
+    Cassandra uses a partitioner (e.g., Murmur3Partitioner) with virtual nodes, which is a form of consistent hashing to map partition keys to token ranges on nodes.
+    DynamoDB hashes the partition key to route items to internal partitions and splits/merges partitions as they grow; this is not classic ring-based consistent hashing exposed to users.
+    MongoDB shards data into range-based chunks on the shard key. If you choose a hashed shard key, the ranges are over the hash space. 
+        A background balancer automatically splits and migrates chunks to keep shards balanced. It is not classic consistent hashing.
+
+SQL databases have also matured and made sharding easier than it once was. Vitess and Citus are popular open-source sharding layers that sit in front of PostgreSQL or MySQL. 
+They handle query routing, cross-shard operations, and resharding without you having to build it yourself. 
+Cloud providers like AWS Aurora and Google Cloud Spanner offer distributed SQL with built-in sharding.
+
+Consistent hashing doesn't solve this on its own since it distributes keys evenly, not traffic. Here are a few strategies that real systems use:
+    Read replicas: Replicate popular keys across multiple nodes and load-balance reads among them. This is the most common approach.
+    Key-space salting: Append a random suffix to hot keys (e.g., taylor-swift-{0..9}) so they hash to different nodes. Reads then scatter across those nodes and get aggregated.
+    Adaptive rebalancing: Monitor traffic in real-time and move specific key ranges off overloaded nodes. This is operationally complex but some systems (like DynamoDB) do it automatically.
+
+Real hash rings use large hash spaces (commonly 2^32 or 2^128) 
+to minimize the chance of collisions and ensure even distribution. The 0-100 range you see in diagrams is just for educational illustrations.
+
+
+ML engineer interview questions - 
+https://www.youtube.com/watch?v=7_E4wnZGJKo
+
