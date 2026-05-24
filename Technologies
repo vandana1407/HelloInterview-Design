@@ -324,3 +324,31 @@ Common strategies include:
     Endpoint-specific limits: 10 booking attempts per minute to prevent ticket scalping
 You typically implement rate limiting at the API gateway level or using middleware in your application. 
 When limits are exceeded, return a 429 Too Many Requests status code.
+
+
+Datbases
+nosql db
+key values stores
+document dbs
+
+wide column family dbs
+Wide-column databases organize data into column families where rows can have different sets of columns. They're optimized for massive write-heavy workloads and time-series data.
+When a user creates a new post, you add a new row keyed by (user_id, timestamp). Rows with the same partition key (user_id) are stored together, 
+making writes fast (just append to the partition) and reads efficient (scan a contiguous range of a user's posts).
+Data modeling impact: You'll design around query patterns even more than with SQL, 
+often duplicating data across different column families to support various access patterns. Time becomes a first-class citizen in your modeling.
+Example technologies include Cassandra and HBase.
+
+Graph db - 
+optimizing for traversing relationships between entities.
+The classic examples are social networks and recommendation engines, but even Facebook models their social graph with MySQL. 
+If it's good enough for the world's largest social network, it's probably good enough for your interview.
+Example technologies include Neo4j and Amazon Neptune.
+
+
+Caching - 
+Postgres may take 50 milliseconds, but reading from an in-memory cache like Redis takes just 1 millisecond.
+Databases store data on disk, and every query pays the cost of disk access. Memory sits much closer to the CPU and avoids that entirely.
+CDN - 
+Without a CDN, every image request travels to your origin. If your server is in Virginia and the user is in India, that adds 250–300 ms of latency per request. 
+With a CDN, the same image is served from a nearby edge server in 20–40 ms. That is a massive performance difference.
