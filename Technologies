@@ -281,3 +281,5 @@ Circuit breakers provide numerous advantages:
     Improved User Experience: Provide fast fallbacks instead of hanging UI
     System Stability: Prevent failures in one service from affecting the entire system
 
+
+Authorization
