@@ -352,3 +352,15 @@ Databases store data on disk, and every query pays the cost of disk access. Memo
 CDN - 
 Without a CDN, every image request travels to your origin. If your server is in Virginia and the user is in India, that adds 250–300 ms of latency per request. 
 With a CDN, the same image is served from a nearby edge server in 20–40 ms. That is a massive performance difference.
+types: 
+write through - chache write, then it wrotes sync to db
+write back (write behind) - cacje write , the it batches nd writes async to db
+
+read thru - read from cache, if not in cache  - cache reads from db, and then return to user.
+cache aside - read always from cache, if not in cache, read from db , also populate cache.
+
+A cache stampede happens when a popular cache entry expires and many requests try to rebuild it at the same time. 
+Instead of one query, you suddenly have hundreds or thousands hitting the database simultaneously, which can overload it and cause cascading failures.
+solution - 
+Request coalescing (also called single flight) lets only one request rebuild the entry when it expires while other concurrent requests wait for that result, 
+preventing a flood of simultaneous database queries. Proactively refreshing the entry before it expires (cache warming) is another good approach.
