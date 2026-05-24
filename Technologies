@@ -316,3 +316,11 @@ Roles:
 
 User: john@example.com → Role: customer
 User: manager@venue.com → Role: venue_manager
+
+Rate limiting prevents abuse by restricting how many requests a client can make in a given time period. This protects your system from both malicious attacks and accidental overuse.
+Common strategies include:
+    Per-user limits: 1000 requests per hour per authenticated user
+    Per-IP limits: 100 requests per hour for unauthenticated requests
+    Endpoint-specific limits: 10 booking attempts per minute to prevent ticket scalping
+You typically implement rate limiting at the API gateway level or using middleware in your application. 
+When limits are exceeded, return a 429 Too Many Requests status code.
