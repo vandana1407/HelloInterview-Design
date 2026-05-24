@@ -283,3 +283,36 @@ Circuit breakers provide numerous advantages:
 
 
 Authorization
+API keys - API keys are long, randomly generated strings that act like passwords for applications rather than humans. 
+When a client makes a request, they include their API key in the Authorization header, and your server looks up that key to identify which application is making the request.
+you generate a unique API key for each client (like sk_live_abc123def456...), store it in your database along with any permissions or rate limits for that client, and 
+then verify each incoming request by looking up the key. They're perfect for server-to-server communication where you control both sides
+GET /events
+Authorization: Bearer sk_live_abc123...
+
+JWT (JSON Web Tokens)
+JWT tokens, on the other hand, encode user information directly into the token itself rather than storing session state on your server. 
+When a user logs in successfully, your server creates a JWT containing their user ID, permissions, and an expiration time, then signs the entire token with a secret key.
+Conveniently, when that JWT comes back with future requests, you can verify it's authentic by checking the signature, 
+and you can read the user information directly from the token without any database lookups. The token itself carries all the context you need to authorize the request.
+// JWT payload
+{
+  "user_id": "123",
+  "email": "john@example.com",
+  "role": "customer",
+  "exp": 1640995200
+}
+Use API keys for internal service communication and external developer access. Use JWT tokens for user sessions in web and mobile applications. 
+JWT tokens can be stateless (no database lookup required) and can carry user context, making them ideal for user-facing applications.
+
+Authorization - 
+Role-Based Access Control (RBAC)
+Real systems have different types of users with different permissions. In our Ticketmaster system, customers can book tickets and view their bookings, venue managers can create events and view sales reports, and system admins can access everything.
+RBAC assigns roles to users and permissions to roles:
+Roles:
+- customer: can book tickets, view own bookings
+- venue_manager: can create events, view sales for their venues
+- admin: can access everything
+
+User: john@example.com → Role: customer
+User: manager@venue.com → Role: venue_manager
