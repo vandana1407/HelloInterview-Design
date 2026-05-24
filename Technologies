@@ -401,6 +401,6 @@ Real hash rings use large hash spaces (commonly 2^32 or 2^128)
 to minimize the chance of collisions and ensure even distribution. The 0-100 range you see in diagrams is just for educational illustrations.
 
 
-ML engineer interview questions - 
+ML engineer interview questions - Exponent
 https://www.youtube.com/watch?v=7_E4wnZGJKo
 
