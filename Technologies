@@ -401,6 +401,23 @@ Real hash rings use large hash spaces (commonly 2^32 or 2^128)
 to minimize the chance of collisions and ensure even distribution. The 0-100 range you see in diagrams is just for educational illustrations.
 
 
+Redis - 
+Some of the most fundamental data structures supported by Redis:
+Strings
+Hashes (objects/dictionaries)
+Lists
+Sets
+Sorted Sets (Priority Queues)
+Bloom Filters (probabilistic set membership; allows false positives)
+Geospatial Indexes
+Time Series
+In addition to simple data structures, Redis also supports different communication patterns like Pub/Sub and Streams, 
+partially standing in for more complex setups like Apache Kafka or AWS SNS (Simple Notification Service) / SQS (Simple Queue Service).
+
+
+
+
+
 ML engineer interview questions - Exponent
 https://www.youtube.com/watch?v=7_E4wnZGJKo
 
