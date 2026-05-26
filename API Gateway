@@ -1,0 +1,21 @@
+API gateway scaling - 
+The most straightforward approach to handling increased load is horizontal scaling. API Gateways are typically stateless, 
+making them ideal candidates for horizontal scaling. You can add more gateway instances behind a load balancer to distribute incoming requests.
+
+Cloud providers offer fully managed API Gateway solutions that integrate well with their ecosystems.
+AWS API Gateway
+    Seamless integration with AWS services
+    Supports REST and WebSocket APIs
+    Built-in features like:
+    Request throttling
+    API keys and usage plans
+    AWS Lambda integration
+    CloudWatch monitoring
+Azure API Management
+    Strong OAuth and OpenID Connect support
+    Policy-based configuration
+    Developer portal for API documentation
+Google Cloud Endpoints
+    Deep integration with GCP services
+    Strong gRPC support
+    Automatic OpenAPI documentation
