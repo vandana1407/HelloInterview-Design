@@ -1,1 +1,6 @@
-
+ZooKeeper is a distributed coordination system used to manage:
+  configuration
+  leader election
+  distributed locks
+  service discovery
+  metadata coordination
