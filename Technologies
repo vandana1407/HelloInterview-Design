@@ -401,7 +401,7 @@ Real hash rings use large hash spaces (commonly 2^32 or 2^128)
 to minimize the chance of collisions and ensure even distribution. The 0-100 range you see in diagrams is just for educational illustrations.
 
 
-Redis - 
+Redis - Redis is fundamentally a key-value store where keys are always strings, but values can be various data structures like strings, hashes, lists, sets, sorted sets, and more.
 Some of the most fundamental data structures supported by Redis:
 Strings
 Hashes (objects/dictionaries)
@@ -413,10 +413,48 @@ Geospatial Indexes
 Time Series
 In addition to simple data structures, Redis also supports different communication patterns like Pub/Sub and Streams, 
 partially standing in for more complex setups like Apache Kafka or AWS SNS (Simple Notification Service) / SQS (Simple Queue Service).
+In a cluster, Redis clients cache hash slot mappings to directly connect to the node containing their requested data, prioritizing performance by avoiding redirects and coordinator overhead.
 
 
+Redis' Sets support simple operations like adding an element to the set (SADD), getting the number of elements or cardinality (SCARD, the count of set members), 
+listing those elements (SMEMBERS) and checking existence (SISMEMBER) 
+Redis is really, really fast. Redis can handle O(100k) writes per second and read latency is often in the microsecond range
 
+Redis as distributed lock - A very simple distributed lock with a timeout might use the atomic increment (INCR) with a TTL. This is basically a shared counter. When we want to try to acquire the lock, we run INCR. 
+If the response is 1 (i.e. we were the first person to try to grab the lock, so we own it!), we proceed. 
+If the response is > 1 (i.e. someone else beat us and has the lock), we wait and retry again later. When we're done with the lock, we can DEL the key so that other processes can make use of it.
 
+Redis for leaderboards - we have a need to find the posts which contain a given keyword (e.g. "tiger") which have the most likes (e.g. "Tiger Woods made an appearance..." @ 500 likes).
+We can use Redis' sorted sets to maintain a list of the top liked posts for a given keyword. Periodically, we can remove low-ranked posts to save space.
+
+Redis for rate limiting - fixed-window rate limiter - When a request comes in, we increment (INCR) the key for our rate limiter and check the response. 
+If the response is greater than N, we wait. If it's less than N, we can proceed. We call EXPIRE on our key so that after time period W, the value is reset.
+If you need a sliding window, you can store timestamps in a Sorted Set per key and remove old entries before counting
+
+Redis for gepspatial search- Redis natively supports geospatial indexes with commands like GEOADD and GEOSEARCH
+
+Redis for events sourcing - Redis' streams are append-only logs similar to Kafka's topics.Redis' streams are append-only logs similar to Kafka's topics. The basic idea behind Redis streams is that we want to durably 
+add items to a log and then have a distributed mechanism for consuming items from these logs.
+With Redis streams we add items onto the queue with commands like XADD and have a single consumer group attached to the stream for our workers. 
+This consumer group is maintaining a reference to the items processed via the stream and, in the case a worker fails, provides a way for a new worker to claim (XCLAIM) and restart processing that message.
+
+Redis for pub/sub - Redis natively supports a publish/subscribe (Pub/Sub) messaging pattern, allowing messages to be broadcast to multiple subscribers in real time. 
+This is useful for building chat systems, real-time notifications, or any scenario where you want to decouple message producers from consumers.
+SPUBLISH channel message   # Sends a message to all subscribers of 'channel' (the S prefix means "sharded")
+SSUBSCRIBE channel        # Listens for messages on 'channel'
+When a client subscribes to a channel, it will receive any messages published to that channel as long as the connection remains open. This makes Pub/Sub great for ephemeral, 
+real-time communication, but it's important to note that messages are not persisted—if a subscriber is offline when a message is published, it will miss that message entirely.
+
+Elastic Search - 
+Under the hood, Elasticsearch uses a combination of geospatial indexing strategies — including geohashes, BKD trees (a variant of k-d trees optimized for block storage), and R-tree-like structures — 
+to make these queries fast even across millions of documents. The geo_point type specifically uses a BKD tree to index coordinates, which allows Elasticsearch to efficiently 
+narrow the search space in two dimensions without the limitations of a standard B-tree index on latitude and longitude separately.
+BST or other similar implementations of BST like AVL trees, leverage the capability of dividing the search space by 2 at each node during the traversal, 
+thus resulting in a O(logN) search in the best case scenario. It is possible to balance BSTs by rotating the tree with the pivot.
+ It is easy for us to use BST to search for either the latitude or longitude but not both the elements together since BST is capable of handling only one dimension in its store.
+
+BKD tree - BST (Binary Search Tree) which will be the base for our post. A BST is a binary tree which has lesser elements to its left and greater elements to its right for all nodes.
+Elasticsearch's use of specialized data structures like skip lists and finite state transducers for its inverted index shows how tailored data structures can dramatically improve performance
 
 ML engineer interview questions - Exponent
 https://www.youtube.com/watch?v=7_E4wnZGJKo
