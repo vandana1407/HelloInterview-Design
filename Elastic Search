@@ -1,0 +1,12 @@
+Elastic Search - 
+Under the hood, Elasticsearch uses a combination of geospatial indexing strategies — including geohashes, BKD trees (a variant of k-d trees optimized for block storage), and R-tree-like structures — 
+to make these queries fast even across millions of documents. The geo_point type specifically uses a BKD tree to index coordinates, which allows Elasticsearch to efficiently 
+narrow the search space in two dimensions without the limitations of a standard B-tree index on latitude and longitude separately.
+BST or other similar implementations of BST like AVL trees, leverage the capability of dividing the search space by 2 at each node during the traversal, 
+thus resulting in a O(logN) search in the best case scenario. It is possible to balance BSTs by rotating the tree with the pivot.
+ It is easy for us to use BST to search for either the latitude or longitude but not both the elements together since BST is capable of handling only one dimension in its store.
+
+BKD tree - BST (Binary Search Tree) which will be the base for our post. A BST is a binary tree which has lesser elements to its left and greater elements to its right for all nodes.
+Elasticsearch's use of specialized data structures like skip lists and finite state transducers for its inverted index shows how tailored data structures can dramatically improve performance
+Master nodes handle cluster administration like adding/removing nodes and creating indices. Data nodes store documents and their indexes. 
+Coordinating nodes receive search requests and distribute them across the cluster. Ingest nodes transform data before indexing.
