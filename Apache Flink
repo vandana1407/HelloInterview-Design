@@ -50,6 +50,7 @@ Processing time: when Flink processed it
 👉 Event time is more correct but harder
 
 Watermark - A watermark is a signal that tells Flink “no more events before this timestamp are expected”, used to handle late/out-of-order events.
+Why watermarks are needed?To handle:late events, out-of-order streams, event-time correctness
 Source and Sink - Source: where data comes from (Kafka, Kinesis) - Sink: where results go (DB, S3, Elasticsearch)
 Out-of-order events handling - Flink uses: event time, watermarks to correctly place late events into correct windows.
 State allows Flink to do: running counts, session tracking, aggregations, pattern detection. Without state → only stateless filtering.
@@ -64,7 +65,6 @@ A distributed snapshot is a globally consistent state of:all operators, all stre
 Trade-offs of large state - Large state leads to:high memory usage, slow checkpointing, longer recovery time, increased storage cost
 External system consistency issue: Even if Flink is exactly-once internally: external DB writes may still duplicate unless idempotent or transactional sinks are used.
 Why Flink is true streaming: Unlike Spark micro-batching:Flink processes event-by-event, maintains continuous state, low latency (ms-level)
-
 
 
 java example - 
@@ -103,6 +103,47 @@ In case of failure, the system restores the last consistent snapshot and resumes
          If system crashes → Flink restores state
 Stateful processing means Flink remembers previous events (e.g., counts, sessions, aggregates) to compute future results.
 
+Handling millions of events/sec in Flink
+Techniques:
+         1. Partitioning
+         keyBy(userId / deviceId)
+         parallel operators
+         2. Horizontal scaling
+         increase TaskManagers
+         3. Backpressure handling
+         buffer tuning
+         async I/O
+         4. Efficient state backend
+         RocksDB state backend for large state
+         5. Batch writes to sinks
+         reduce DB pressure
+         6. Use event filtering early
+         reduce data volume upstream
+Store & Query Flink State at Scale
+         State storage options:
+                  in-memory (fast, small state)
+                  RocksDB (large state)
+         Scaling strategies:
+                  key partitioning
+                  state sharding
+                  incremental checkpoints
+Typical stack:
+Amazon Kinesis Data Analytics for Apache Flink
+         Kinesis → Flink → DynamoDB / S3 / OpenSearch
+         Components:
+         Kinesis = streaming source
+         Flink = processing
+         DynamoDB = serving layer
+         S3 = checkpoint storage
+What if checkpoint storage (S3) fails?
+Impact: checkpoints cannot be saved , fault tolerance breaks
+Flink behavior:job continues temporarily, checkpointing fails repeatedly, eventually job may restart or degrade
+Mitigation:retries, multi-AZ S3, backup checkpoint location, alerting on checkpoint failure
+
+Exactly-once in full pipeline (Kafka → Flink → DB)
+End-to-end design: Kafka: retains offsets
+Flink:checkpoint state + offsets
+Sink:must support one of: idempotent writes, transactional writes
 
 Real-time recommendation scoring
 user clicks → Flink aggregation → ranking
