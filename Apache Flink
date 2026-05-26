@@ -1,0 +1,32 @@
+Flink is a real-time stream processing engine used to process data as it arrives (not in batches).
+Very common in:
+
+fraud detection (banking)
+real-time recommendations (Netflix, Amazon)
+monitoring & alerting (DevOps, AWS systems)
+IoT sensor processing
+Kafka stream processing pipelines
+
+Flink architecture - 
+Sources → Stream → Transformations → Sink
+(Kafka)     |          |              (DB)
+         Flink engine (processing)
+
+Typical stack:
+
+Kafka → Flink → DynamoDB / Cassandra / S3
+
+Because streams never end, Flink groups data using windows:
+
+Types:
+Tumbling window (fixed size)
+Sliding window
+Session window
+
+Flink remembers things:
+  user session
+  running totals
+  counters
+This is called:
+
+stateful stream processing
