@@ -17,6 +17,63 @@ Throughput pattern
   read-heavy workloads perform best
   write-heavy workloads degrade quickly due to quorum sync
 
+Failure handling is core strength
+  session expiry
+  ephemeral node cleanup
+  automatic leader election
+
 Znode size limit
   recommended: < 1 MB per znode
   ZooKeeper is NOT for large data storage
+
+Znode - A znode is like a node in a filesystem:
+Types:
+  Persistent
+  Ephemeral (dies when session ends)
+  Sequential (auto-increment suffix)
+
+Leader-Follower architecture - 1 leader , N followers
+Writes: must go through leader
+Reads: can be served by followers
+
+ZAB protocol (ZooKeeper Atomic Broadcast)
+Ensures:
+  ordered writes
+  consistency across nodes
+  replication correctness
+
+What happens if the leader fails? - A new leader is elected from followers using ZAB protocol, ensuring continuity.
+What are ephemeral znodes used for? They are used to represent temporary state like: active service instances , locks. They disappear when session ends.
+What is a watch in ZooKeeper? - A watch is a notification mechanism that triggers when a znode changes.
+Why is ZooKeeper not suitable for large data storage? Because: data is stored in memory , znodes are small (<1MB), designed for metadata, not bulk data
+What is the CAP trade-off in ZooKeeper? ZooKeeper prioritizes: Consistency ✔ Partition tolerance ✔ , Availability is reduced during partitions
+
+Design a distributed lock system with ZooKeeper - 
+Goal - Ensure only one client holds a lock at a time across distributed machines.
+architecture - Clients → ZooKeeper → Ephemeral Sequential Znodes
+hwo ti works - 
+  Each client creates an ephemeral sequential znode:
+    /locks/lock-0001
+    /locks/lock-0002
+    /locks/lock-0003
+Step 2: Lock acquisition rule
+  Client with lowest sequence number gets lock
+  Others watch the node before them
+Step 3: Waiting mechanism
+  Example:
+  P1 → lock-0001 ✔ (gets lock)
+  P2 → lock-0002 (watches 0001)
+  P3 → lock-0003 (watches 0002)
+Step 4: Unlock
+When P1 releases lock OR crashes:
+  ephemeral node disappears automatically
+  P2 gets notified → acquires lock
+Failure handling
+Client crash → ephemeral node auto-deleted
+  No orphan locks
+  Watches trigger re-election
+
+Quorum ensures correctness
+  prevents split brain
+  ensures consistent leader
+
