@@ -1,0 +1,38 @@
+Kafka - 
+We can group consumers together into what Kafka calls a consumer group. With consumer groups, 
+each partition is assigned to exactly one consumer in the group, so under normal operation each event is delivered to a single consumer. 
+
+A Kafka cluster is made up of multiple brokers. These are just individual servers (they can be physical or virtual). Each broker is responsible for storing data and serving clients. 
+The more brokers you have, the more data you can store and the more clients you can serve.
+Each broker has a number of partitions. Each partition is an ordered, immutable sequence of messages that is continually appended to -- 
+think of like a log file. Partitions are the way Kafka scales as they allow for messages to be consumed in parallel.
+A topic is just a logical grouping of partitions. Topics are the way you publish and subscribe to data in Kafka. When you publish a message, you publish it to a topic, and when you consume a message, you consume it from a topic. 
+Topics are always multi-producer; that is, a topic can have zero, one, or many producers that write data to it.
+
+you can use Kafka as either a message queue or a stream. Frankly, the distinction here is minor. In both modes, consumers track their progress using offset commits. 
+The key difference is in the consumption pattern: when used as a message queue, each message is processed by one consumer in a group and then effectively "consumed." 
+When used as a stream, the log is retained and can be replayed, multiple consumer groups can independently read the same data, and consumers can process data continuously as it arrives.
+
+When an event occurs, the producer formats a message, also referred to as a record, and sends it to a Kafka topic. A message consists of four fields, all technically optional: a value (the payload), a key, a timestamp, and headers. 
+The key is used to determine which partition the message is sent to. The timestamp records when the message was created or ingested (but ordering within a partition is determined by offsets, 
+not timestamps). Headers, like HTTP headers, are key-value pairs that can be used to store metadata about the message.
+
+It's a common anti-pattern in system design interviews to store large blobs of data in Kafka. Kafka is not a database, and it's not meant to store large files. 
+It's meant to store small messages that can be processed quickly.
+On good hardware, a single broker can store around 1TB of data and handle as many as 1M messages per second 
+(this is very hand wavy as it depends on message size and hardware specs, but is a useful estimate).
+
+What is far more relevant and likely is that a consumer goes down. When a consumer fails, Kafka's fault tolerance mechanisms help ensure continuity:
+Offset Management: Remember that partitions are just append-only logs where each message is assigned a unique offset. 
+Consumers commit their offsets to Kafka after they process a message. This is the consumers way of saying, "I've processed this message." When a consumer restarts, it reads its last committed offset from Kafka and resumes processing from there. This ensures no messages are missed, though some may be reprocessed if the consumer crashed before committing its latest offset (at-least-once delivery).
+Rebalancing: When part of a consumer group, if one consumer goes down, Kafka will redistribute the partitions among the remaining consumers so that all partitions are still being processed.
+
+Kafka does not actually support retries for consumers out of the box (but AWS SQS does!) so we need to implement our own retry logic. One common pattern is to set up a custom topic that 
+we can move failed messages to and then have a separate consumer that processes these messages. This way, we can retry messages as many times as we want without affecting the main consumer. 
+If a given message is retried too many times, we can move it to a dead letter queue (DLQ). DLQs are just a place to store failed messages so that we can investigate them later.
+
+Performance optimizations - 
+Kafka producers naturally batch messages before sending them over the network to reduce overhead. You can also use sendBatch() to send messages across multiple topics in one call.
+Another common way to improve throughput is by compressing messages. This can be done by setting the compression option when sending messages. Kafka supports several compression 
+algorithms, including GZIP, Snappy, and LZ4.
+Arguably the biggest impact you can have to performance comes back to your choice of partition key. The goal is to maximize parallelism by ensuring that messages are evenly distributed across partitions.
