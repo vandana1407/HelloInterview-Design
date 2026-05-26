@@ -51,6 +51,25 @@ Processing time: when Flink processed it
 
 Watermark - A watermark is a signal that tells Flink “no more events before this timestamp are expected”, used to handle late/out-of-order events.
 Why watermarks are needed?To handle:late events, out-of-order streams, event-time correctness
+Core problem watermarks solve
+👉 “When can I safely say no more events for this time window will arrive?”
+Example:
+window = 10:00–10:05
+but events are still arriving late
+Without watermark:
+window never closes ❌
+With watermark:
+window closes when watermark passes end time ✔
+
+Flink allows late data:You can configure:“I will still accept events 2 minutes late”
+So:watermark passes window end but Flink still accepts late updates for a grace period
+After that:data is dropped or sent to side output
+Types of watermark strategies
+1. Ascending watermark (ordered streams) - Assumes:events come in order, Fast and simple.
+2. Bounded out-of-orderness watermark - Most common:allows events to be delayed by X time, Example:max delay = 5 seconds
+3. Custom watermark generator - Used when:complex business logic, multiple event sources
+
+
 Source and Sink - Source: where data comes from (Kafka, Kinesis) - Sink: where results go (DB, S3, Elasticsearch)
 Out-of-order events handling - Flink uses: event time, watermarks to correctly place late events into correct windows.
 State allows Flink to do: running counts, session tracking, aggregations, pattern detection. Without state → only stateless filtering.
@@ -102,6 +121,18 @@ In case of failure, the system restores the last consistent snapshot and resumes
 3. Stateful + fault tolerant
          If system crashes → Flink restores state
 Stateful processing means Flink remembers previous events (e.g., counts, sessions, aggregates) to compute future results.
+A Flink job is producing duplicate results even though “exactly-once” is enabled. - 
+A common reason is that the external sink (such as a database or API) is not idempotent or transactional, 
+so when Flink retries after a failure or checkpoint restore, the same event is written more than once, causing duplicates.
+
+backpressure - 
+One operator (usually stateful like keyBy + window/aggregation) becomes slow because it is processing or accessing large state inefficiently, 
+causing message processing to lag behind ingestion rate.
+Reasons could be:
+         large in-memory state
+         expensive serialization/deserialization
+         skewed key distribution (hot key)
+         slow checkpointing or GC pressure
 
 Handling millions of events/sec in Flink
 Techniques:
@@ -145,5 +176,49 @@ End-to-end design: Kafka: retains offsets
 Flink:checkpoint state + offsets
 Sink:must support one of: idempotent writes, transactional writes
 
+Why event-time is hard?Because: events arrive late, distributed systems have clock skew, ordering is not guaranteed.
+
 Real-time recommendation scoring
 user clicks → Flink aggregation → ranking
+
+Skew + scaling problem
+You have a Flink job: keyBy(userId), 1% of users generate 90% of traffic
+👉 What happens in the system, and how would you fix it?
+When keyBy(userId) has skewed distribution, a small number of tasks receive most of the events. These tasks become CPU and state bottlenecks,
+causing uneven processing and backpressure while other tasks remain idle.
+Internal effects:
+         uneven load across TaskManagers
+         large state for hot keys
+         slower checkpointing for those operators
+         pipeline throughput limited by slowest partition
+Solutions - 
+Key salting (correct idea, but must be precise) : Instead of modifying userId randomly: Add a controlled salt to split hot keys into sub-keys (e.g., userId + random bucket)
+Then later:re-aggregate results
+Two-stage aggregation (best practice) - Stage 1: userId + shardId → partial aggregates Stage 2: merge results per userId
+Adaptive load balancing (advanced) - detect hot keys dynamically - redistribute partitions
+Stateful optimization - reduce per-key state size , use TTL or windowing
+
+
+A Flink job has:
+         very large state (100s of GB)
+         checkpoint duration keeps increasing
+         occasional checkpoint failures
+👉 What is happening internally and how would you fix it?
+As Flink state grows, checkpointing becomes slower because Flink must serialize and snapshot a large amount of state (often from RocksDB or heap), 
+upload it to durable storage (like S3), and wait for all operators to complete consistent snapshots.
+This leads to:
+         longer checkpoint duration
+         network I/O bottlenecks (S3 upload)
+         CPU overhead for serialization
+         possible checkpoint timeout failures
+Why checkpoints start failing
+         state too large → checkpoint cannot finish within configured timeout
+         backpressure delays checkpoint barriers
+         slow task causes global checkpoint delay (straggler problem)
+How to fix it (real Flink strategies)
+✔ 1. Reduce state size (most important)
+2. Incremental checkpoints (RocksDB) - RocksDB - only changes are checkpointed instead of full state snapshot
+✔ 3. Optimize checkpoint interval (not just “make it smaller”) - too frequent → overhead - too infrequent → large recovery cost
+👉 must tune based on throughput + state size
+✔ 4. Use asynchronous + unaligned checkpoints - avoids waiting for slow operators - reduces barrier alignment bottleneck
+✔ 5. Scale out state - increase parallelism , redistribute key space
