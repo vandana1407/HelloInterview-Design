@@ -1,0 +1,30 @@
+Cassandra - 
+One notable consistency level to understand is QUORUM. QUORUM requires a majority (n/2 + 1) of replicas to respond. 
+Applying QUORUM to both reads and writes guarantees that writes are visible to reads because at least one overlapping node is guaranteed to participate 
+in both a write and a read. To illustrate this, let's assume a set of 3 nodes. 3/2 + 1 = 2, so 2 of 3 nodes need to be written to and read from in order 
+for writes and reads to succeed. This means that a write will always be seen by a read because at least 1 of those 2 nodes will have also seen the write.
+
+Any Cassandra node can service a query from the client application because all nodes in Cassandra can assume the role of a query "coordinator". 
+Nodes in Cassandra each know about other alive nodes in the cluster. They share cluster information via a protocol called "gossip"
+
+storage model - 
+Cassandra leverages a data structure called a Log Structured Merge Tree (LSM tree) index to achieve this speed. The LSM tree is used in place of a B-tree
+Cassandra opts for an approach that favors write speed over read speed. Every create / update / delete is a new entry (with some exceptions).
+The 3 constructs core to the LSM tree index are:
+    Commit Log - This basically is a write-ahead-log to ensure durability of writes for Cassandra nodes.
+    Memtable - An in-memory, sorted data structure that stores write data. It is sorted by primary key of each row.
+    SSTable - A.k.a. "Sorted String Table." Immutable file on disk containing data that was flushed from a previous Memtable.
+With all these constructs working together, writes look like this:
+    A write is issued for a node.
+    That write is written to the commit log so it doesn't get lost if the node goes down while the write is being processed or if the data is only in the Memtable when the node goes down.
+    The write is written to the Memtable.
+    Eventually, the Memtable is flushed to disk as an immutable SSTable after some threshold size is hit or some period of time elapses.
+    When a Memtable is flushed, any commit log messages are removed that correspond to that Memtable, to save space. 
+    These are superfluous now that the Memtable is on disk as an SSTable that is immutable.
+When reading data for a particular key, Cassandra reads the Memtable first, which will have the latest data. If the Memtable does not have the data for the key, 
+Cassandra leverages a bloom filter to determine which SSTables on disk might have the data. It then reads the SSTables in order from newest to oldest to find the 
+latest data for the row. The data in SSTables is sorted by primary key, making it easy to find a particular key.
+
+In the presence of write attempts to nodes that are considered "offline", Cassandra leverages a technique called "hinted handoffs." 
+When a node is considered offline by a coordinator node attempting to write to it, the coordinator temporarily stores the write data in order for the write to proceed.
+This temporary data is called a "hint." When the offline node is detected as online, the node (or nodes) with a hint sends that data to the previously-offline node.
