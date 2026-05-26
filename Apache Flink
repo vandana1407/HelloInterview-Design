@@ -1,4 +1,5 @@
 Flink is a real-time stream processing engine used to process data as it arrives (not in batches).
+distributed stateful stream computation engine
 Very common in:
 
 fraud detection (banking)
@@ -19,9 +20,9 @@ Kafka → Flink → DynamoDB / Cassandra / S3
 Because streams never end, Flink groups data using windows:
 
 Types:
-Tumbling window (fixed size)
-Sliding window
-Session window
+tumbling windows (fixed)
+sliding windows (overlapping)
+session windows (user activity bursts)
 
 Flink remembers things:
   user session
@@ -30,3 +31,22 @@ Flink remembers things:
 This is called:
 
 stateful stream processing
+
+java example - 
+DataStream<Event> stream = env.addSource(kafkaSource);
+
+stream
+  .keyBy(event -> event.userId)
+  .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
+  .sum("clickCount");
+
+why Flink powerful - 
+1. Exactly-once processing
+         No duplicate processing (critical for payments/logs)
+2. True streaming (not micro-batch)
+         Unlike Spark Streaming
+3. Stateful + fault tolerant
+         If system crashes → Flink restores state
+
+Real-time recommendation scoring
+user clicks → Flink aggregation → ranking
