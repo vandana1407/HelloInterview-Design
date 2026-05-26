@@ -4,3 +4,19 @@ ZooKeeper is a distributed coordination system used to manage:
   distributed locks
   service discovery
   metadata coordination
+
+Quorum requirement
+ZooKeeper uses quorum-based replication
+Requires majority (N/2 + 1) nodes to operate
+Example:
+3 nodes → quorum = 2
+5 nodes → quorum = 3
+👉 This ensures fault tolerance
+
+Throughput pattern
+  read-heavy workloads perform best
+  write-heavy workloads degrade quickly due to quorum sync
+
+Znode size limit
+  recommended: < 1 MB per znode
+  ZooKeeper is NOT for large data storage
