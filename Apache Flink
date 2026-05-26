@@ -43,6 +43,25 @@ stream
 why Flink powerful - 
 1. Exactly-once processing
          No duplicate processing (critical for payments/logs)
+         done by checkpointing, distributed snapshots, failure recovery using failed state
+         What gets stored in a checkpoint:
+                  operator state (aggregations, counters, sessions)
+                  Kafka offsets / source positions
+                  window states
+                  in-flight processing state
+         sends snapshot to durable storage (usually S3/HDFS).this is a global consistent snapshot across all distributed operators
+         Why “distributed” matters In Flink:
+                  multiple nodes process different parts of stream
+                  data is partitioned (keyed streams)
+                  each operator runs independently
+         now when task manger craches, flink fetches this stored snapshot from storage.
+         Kafka offsets are restored, stream restarts from correct position
+         Checkpoint ensures:
+         ✔ event is either:
+         included in snapshot OR not processed at all
+         So after recovery: no duplicate processing, no missing updates
+Flink achieves exactly-once semantics using periodic checkpointing, where distributed snapshots of operator state and source offsets are taken using barrier alignment. 
+In case of failure, the system restores the last consistent snapshot and resumes processing from the saved offsets, ensuring no event is lost or processed twice.
 2. True streaming (not micro-batch)
          Unlike Spark Streaming
 3. Stateful + fault tolerant
