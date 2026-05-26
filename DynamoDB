@@ -1,0 +1,64 @@
+Dynamo DB - 
+DynamoDB tables are defined by a primary key, which can consist of one or two attributes:
+    Partition Key - A single attribute that, along with the sort key (if present), uniquely identifies each item in the table. DynamoDB uses the partition key's value to determine 
+        the physical location of the item within the database. This value is hashed to determine the partition where the item is stored.
+    Sort Key (Optional) - An additional attribute that, when combined with the partition key, forms a composite primary key. The sort key is used to order items with the same 
+        partition key value, enabling efficient range queries and sorting within a partition.
+
+A snowflake is composed of 64 bits:
+    The highest-order bit is always 0.
+    The next 41 bits encode a timestamp, representing milliseconds since the chosen epoch.
+    The next 10 bits represent a machine ID, preventing clashes.
+    The next 12 more bits represent a per-machine sequence number, to allow creation of multiple snowflakes in the same millisecond.
+    Only 63 bits are variable, so that a non-negative number can be processed readily as a 64-bit signed integer; the final number is generally serialized textually as a decimal number
+Snowflakes are sortable by time, because they are based on the time they were created
+
+Global Secondary Index (GSI) - An index with a partition key and optional sort key that differs from the table's partition key. GSIs allow you to query items based 
+    on attributes other than the table's partition key. 
+    Since GSIs use a different partition key, the data is stored on entirely different physical partitions from the base table and is replicated separately.
+Local Secondary Index (LSI) - An index with the same partition key as the table's primary key but a different sort key. LSIs enable range queries and sorting within a partition. 
+    Since LSIs use the same partition key as the base table, they are stored on the same physical partitions as the items they're indexing.
+DynamoDB does support ProjectionExpression to return only specific attributes, this only reduces network bandwidth 
+
+DynamoDB supports two consistency models for read operations: eventual consistency and strong consistency. Importantly, this is not a table-level configuration -- 
+you choose the consistency model on each individual read request by setting ConsistentRead=true in your GetItem, Query, or Scan calls.
+Eventual Consistency (Default) - Every read is eventually consistent unless you explicitly request otherwise. This provides the highest availability and lowest latency, 
+but you might not see the most recent write immediately. DynamoDB generally behaves as an AP system with BASE properties.
+
+Eventually Consistent Reads (Default):
+Reads can be served by any of the three replicas in the partition's replication group
+Since the leader replicates writes to followers asynchronously (after quorum acknowledgment), a follower might not have the very latest write yet
+Strongly Consistent Reads:
+The read request is routed directly to the leader node for the partition
+Since all writes go through the leader first, it always has the most current data
+
+DynamoDB also supports ACID transactions via TransactWriteItems and TransactGetItems, which provide serializable isolation across up to 100 items spanning multiple tables.
+
+DynamoDB scales through auto-sharding and load balancing. When a partition reaches capacity (in size or throughput), 
+DynamoDB automatically splits it and redistributes data. Hash-based partitioning ensures even distribution across nodes, balancing traffic and load.
+Fautl Tolerance - DynamoDB automatically replicates your data across three Availability Zones within a region
+The leader handles all writes: it generates a write-ahead log (WAL) entry and sends it to its peers, and the write is acknowledged once a quorum (2 of 3) persists the log record. 
+
+Security - 
+Data is encrypted at rest by default in DynamoDB.
+DynamoDB also enforces TLS for all API calls, so data in transit is always encrypted -- there's no separate configuration needed.
+DynamoDB integrates with AWS Identity and Access Management (IAM) to provide fine-grained access control over your data.
+You can create IAM policies that specify who can access your data and what actions they can perform
+
+DynamoDB has a purpose-built, in-memory cache called DynamoDB Accelerator (DAX). So there may be no need to introduce additional services (Redis, Memcached) into your architecture.
+DAX is a caching service designed to enhance DynamoDB performance by delivering microsecond response times for read-heavy workloads.
+
+Dynamo also has built-in support for Change Data Capture (CDC) through DynamoDB Streams. Streams capture changes to items in a table and make them available for processing in real-time. 
+Any change event in a table, such as an insert, update, or delete operation, is recorded in the stream as a stream record to be consumed by downstream applications.
+This can be used for a variety of use cases, such as triggering Lambda functions in response to changes in the database, 
+maintaining a replica of the database in another system, or building real-time analytics applications.
+DynamoDB Streams can be used to keep an Elasticsearch index in sync with a DynamoDB table. This is useful for building search functionality on top of DynamoDB data.
+
+doff between dynam db and cassandra - 
+The biggest difference is that Cassandra is write optimized (LSM) while Dynamo is read optimized (BTree).
+Cassandra's support for 2nd index is not very good.
+Dynamo has support for CDC (change data capture) while (I think) Cassandra does not.
+
+Cassandra → “manual scaling, tunable consistency, wide-column design”
+DynamoDB → “fully managed, serverless NoSQL with AWS integration”
+
