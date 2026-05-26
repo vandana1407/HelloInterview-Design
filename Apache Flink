@@ -1,5 +1,6 @@
 Flink is a real-time stream processing engine used to process data as it arrives (not in batches).
 distributed stateful stream computation engine
+A stream is an infinite sequence of events (clicks, logs, transactions) processed in order as they arrive.
 Very common in:
 
 fraud detection (banking)
@@ -13,6 +14,13 @@ Sources → Stream → Transformations → Sink
 (Kafka)     |          |              (DB)
          Flink engine (processing)
 
+Operators are transformations like:
+         map
+         filter
+         keyBy
+         window
+         reduce
+
 Typical stack:
 
 Kafka → Flink → DynamoDB / Cassandra / S3
@@ -24,13 +32,40 @@ tumbling windows (fixed)
 sliding windows (overlapping)
 session windows (user activity bursts)
 
+Windows group infinite streams into finite chunks:
+         tumbling (fixed non-overlapping)
+         sliding (overlapping)
+         session (activity-based grouping)
+
 Flink remembers things:
   user session
   running totals
   counters
 This is called:
-
 stateful stream processing
+
+Event time vs Processing time
+Event time: when event actually happened
+Processing time: when Flink processed it
+👉 Event time is more correct but harder
+
+Watermark - A watermark is a signal that tells Flink “no more events before this timestamp are expected”, used to handle late/out-of-order events.
+Source and Sink - Source: where data comes from (Kafka, Kinesis) - Sink: where results go (DB, S3, Elasticsearch)
+Out-of-order events handling - Flink uses: event time, watermarks to correctly place late events into correct windows.
+State allows Flink to do: running counts, session tracking, aggregations, pattern detection. Without state → only stateless filtering.
+Flink scales by: partitioning streams (keyBy), parallel operator execution, distributed cluster (TaskManagers).
+Backpressure happens when: downstream operator is slower than upstream - causing upstream buffers to fill and slow down ingestion.
+Fault tolerance in Flink uses: checkpointing, state snapshots, restart strategies
+Checkpointing periodically saves: operator state , source offsets to durable storage for recovery.
+Savepoint vs Checkpoint - Checkpoint: automatic, for recovery - Savepoint: manual, for upgrades/migration.
+Flink reads Kafka offsets as part of checkpoint → ensures consistent replay after failure.
+what happens on restart - Flink:restores last checkpoint, restores operator state, resets Kafka offsets, resumes processing
+A distributed snapshot is a globally consistent state of:all operators, all streams, all offsets taken at the same logical time.
+Trade-offs of large state - Large state leads to:high memory usage, slow checkpointing, longer recovery time, increased storage cost
+External system consistency issue: Even if Flink is exactly-once internally: external DB writes may still duplicate unless idempotent or transactional sinks are used.
+Why Flink is true streaming: Unlike Spark micro-batching:Flink processes event-by-event, maintains continuous state, low latency (ms-level)
+
+
 
 java example - 
 DataStream<Event> stream = env.addSource(kafkaSource);
@@ -66,6 +101,8 @@ In case of failure, the system restores the last consistent snapshot and resumes
          Unlike Spark Streaming
 3. Stateful + fault tolerant
          If system crashes → Flink restores state
+Stateful processing means Flink remembers previous events (e.g., counts, sessions, aggregates) to compute future results.
+
 
 Real-time recommendation scoring
 user clicks → Flink aggregation → ranking
