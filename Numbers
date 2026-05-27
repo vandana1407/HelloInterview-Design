@@ -1,0 +1,13 @@
+Redis   - per request takes few ms.  
+        - it can take 100k requests /sec
+        -key is always string , but value can be sorted set(time complexity becomes(o(log n))
+
+tcp handshake - may take 50 ms
+              - so use connection pooling
+              - handshake required, maintain pool size
+
+web sockets - - 2million connections per sec
+
+postgress - 5k to 20k writes/sec
+
+average internet speed -   100 Mbits/sec
