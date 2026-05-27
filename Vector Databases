@@ -23,3 +23,10 @@ The Nearest Neighbor ProblemGiven a query vector $q$ and a database of $n$ vecto
   ANN (Approximate Nearest Neighbor)To achieve sub-second latencies, vector databases trade a tiny bit of accuracy for massive speedups using ANN algorithms.
   Instead of searching everything, they use pre-calculated index structures to jump directly to the neighborhood of the target vector and search only a fraction of the dataset.
 
+usage - 
+Design a Recommendation System (TikTok, Spotify): Emphasize using dual-tower neural networks to generate user and item embeddings, storing item embeddings in a vector database, 
+and querying with the user embedding.
+
+Design a E-commerce Visual Search (Search by Image): Store product image embeddings. Use hybrid search to combine image similarity scores with structural 
+text queries (e.g., category, price range, stock).
+
