@@ -16,7 +16,11 @@ A set of k different cryptographically independent hash functions (e.g., MurmurH
 
 Step A: Adding an ElementWhen you add an item to the filter:Feed the item into each of the $k$ hash functions.Each hash function will output an integer index.
 Set the bits at those specific indices in the bit array to 1.Example: Suppose we have a 10-bit array and 3 hash functions ($k=3$). We want to add the 
-username "alice":$\text{Hash}_1(\text{"alice"}) \rightarrow 2$$\text{Hash}_2(\text{"alice"}) \rightarrow 5$$\text{Hash}_3(\text{"alice"}) \rightarrow 8$Bits 2, 5, and 8 are flipped to 1.
+username "alice":
+hash1(alice) = 2
+hash2(alice) = 5
+hash3(alice)= 8
+Bits 2, 5, and 8 are flipped to 1.
 
 Step B: Querying an ElementTo check if an item already exists in the set:
 Pass the item through the same $k$ hash functions to get the target indices.Look at the bit array at those indices:
