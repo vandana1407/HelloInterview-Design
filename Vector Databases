@@ -1,0 +1,25 @@
+what is a vector  - A vector (or embedding) is just an array of numbers that represents something. That "something" could be a word, a sentence, an image, a user, a product, 
+or really anything you can feed into a machine learning model. The magic is that similar things end up with similar vectors.
+// Two sentences that mean similar things
+"The cat sat on the mat"   → [0.12, -0.34, 0.78, ..., 0.45]  // 1536 numbers
+"A feline rested on a rug" → [0.11, -0.32, 0.79, ..., 0.44]  // very similar!
+
+// A sentence with different meaning
+"The stock market crashed" → [-0.89, 0.12, -0.45, ..., 0.23] // very different
+The typical embedding has somewhere between 128 and 1536 dimensions
+
+Vector databases don't look for exact string matches. They find vectors that are "close" to a query vector in high-dimensional space using mathematical formulas.
+
+1. Euclidean Distance ($L_2$ Distance)Measures the straight-line distance between two points in Euclidean space.Formula: 
+2. Dot Product (Inner Product)
+Measures the product of the magnitudes of two vectors and the cosine of the angle between them.
+3. Cosine Similarity
+Measures the cosine of the angle between two vectors, ignoring their differences in magnitude.
+
+The Nearest Neighbor ProblemGiven a query vector $q$ and a database of $n$ vectors, how do we find the $k$ closest vectors?
+  Exact k-NN (k-Nearest Neighbors)Calculates the similarity metric between the query vector $q$ and every single vector in the database.
+  Pros: $100\%$ perfect accuracy (recall).Cons: Time complexity is O(d . n) where n is the number of vectors and d is dimensions. 
+  At scale, this exhaustive search is way too slow for real-time applications.
+  ANN (Approximate Nearest Neighbor)To achieve sub-second latencies, vector databases trade a tiny bit of accuracy for massive speedups using ANN algorithms.
+  Instead of searching everything, they use pre-calculated index structures to jump directly to the neighborhood of the target vector and search only a fraction of the dataset.
+
