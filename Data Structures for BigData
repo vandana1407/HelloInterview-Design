@@ -1,1 +1,50 @@
 Bloom Filter
+A Bloom Filter is a space-efficient, probabilistic data structure used to test whether an element is a member of a set.
+
+The Naive Approach: Keep all billions of usernames in a SQL database or an in-memory HashSet. Checking it takes $O(1)$ time, 
+but the memory cost is massive (gigabytes of RAM just storing strings).
+The Bloom Filter Approach: You use a tiny bit array in memory. When a username is taken, you flip a few bits to 1.
+
+If the Bloom filter says "No", it is 100% certain that the item has never been seen before. (Zero False Negatives).
+
+If the Bloom filter says "Yes", it means the item has probably been seen before, but there is a slight chance it's a mistake. (Possible False Positives).
+
+How it works - 
+A Bloom filter consists of two primary components:
+A bit array of size m, initially all set to 0.
+A set of k different cryptographically independent hash functions (e.g., MurmurHash, FNV-1a). Each hash function must map an incoming element to one of the m slots in the bit array.
+
+Step A: Adding an ElementWhen you add an item to the filter:Feed the item into each of the $k$ hash functions.Each hash function will output an integer index.
+Set the bits at those specific indices in the bit array to 1.Example: Suppose we have a 10-bit array and 3 hash functions ($k=3$). We want to add the 
+username "alice":$\text{Hash}_1(\text{"alice"}) \rightarrow 2$$\text{Hash}_2(\text{"alice"}) \rightarrow 5$$\text{Hash}_3(\text{"alice"}) \rightarrow 8$Bits 2, 5, and 8 are flipped to 1.
+
+Step B: Querying an ElementTo check if an item already exists in the set:
+Pass the item through the same $k$ hash functions to get the target indices.Look at the bit array at those indices:
+If any of those bits are still 0, the item definitely does not exist in the set (if it did, those bits would have been flipped to 1 during ingestion).
+If all of those bits are 1, the filter returns true.
+
+How False Positives Happen
+Imagine you check for the username "bob". Its hashes point to indices 2, 5, and 9.
+Index 2 and 5 were already set to 1 by "alice" earlier.
+If another completely unrelated item happened to set index 9 to 1 in the past, all three bits for "bob" are now 1.
+The filter will confidently tell you "bob" exists, even though "bob" was never added. This is a False Positive collision.
+
+Usage:
+1. Database Query Avoidance (LSM-Trees, Cassandra, BigTable)
+When looking up a row key, databases have to read data from disk files (SSTables). Reading disk is slow. Systems like Apache Cassandra put a small Bloom filter in RAM for each file.
+If the filter says the key isn't in that file, the database skips reading that file entirely.
+This saves thousands of expensive disk I/O operations per second.
+
+3. Content Recommendations / Cache Filtering (Medium, Squid)
+Preventing users from seeing duplicate content. Medium can use a Bloom filter to track 
+articles you've already read. When generating your homepage feed, it passes potential articles through your local filter to weed out read content without making heavy database joins.
+
+Pitfals and Limitations - 
+1. No Deletions Allowed: You cannot remove an item from a standard Bloom filter. If you try to delete "alice" by flipping bits 2, 5, and 8 back to 0, 
+you might inadvertently erase bits that are also shared by other items in your system, introducing catastrophic false negatives.
+  The Fix: If you absolutely need deletions, you must use a Counting Bloom Filter, which replaces the binary bits with numerical 
+  counters that increment on insertion and decrement on removal.
+2. The Filter Fills Up Over Time: The false positive rate ($p$) is a mathematical function of the number of items inserted ($n$), the array size ($m$), and the number of hash functions ($k$). 
+If you keep stuffing elements into the filter without expanding it, the array will slowly become mostly 1s, causing the false positive rate to degrade toward $100\%$.
+3. Non-Scalable Memory Size: A traditional Bloom filter is static. You must allocate the bit array size upfront based on your projected peak capacity. 
+If your dataset grows $10\times$ beyond your estimate, you have to build a new, larger Bloom filter from scratch and re-hash your entire historical database into it.
