@@ -145,6 +145,12 @@ like 0, 1, or 2, the math knows that very few unique users have visited.However,
 the laws of probability state that you must have processed a massive amount of unique data to accidentally generate a hash string starting with 12 consecutive zeros
 (1  in 4096 chance).
 A standard HyperLogLog can use just 12,288 bits (1.5 KB) of total memory to keep track of billions of distinct items.
+Here is the exact mathematical breakdown of how 12,288 bits handles massive cardinality.
+1. Defining the Allocation: Buckets and BitsA standard production HyperLogLog configuration (like the one used natively in Redis) 
+allocates 2^11 buckets Number of Buckets  = 2^{11} = 2,048 buckets
+Each of these 2,048 buckets is allocated exactly 6 bits of memory space.Total Memory = 2,048 buckets times 6 bits/bucket= 12,288  bits
+To convert bits to kilobytes:$12,288  bits div 8 = 1,536 bytes
+1,536  bytes div 1,024 = 1.5 KB
 
 Use-Cases and Pitfalls
 1. Daily / Monthly Active Users (DAU / MAU)
