@@ -1,0 +1,127 @@
+News Aggregator - Yahoo news /  Google news
+the core objective is to pull data from millions of distinct web sources, normalize that data, group related articles into coherent "stories," and serve a personalized feed to users at scale.
+
+Functional Requirements
+Ingest articles from RSS feeds, sitemaps, and direct web scraping.
+Deduplicate identical articles and cluster similar articles together (Topic Clustering).
+Provide a real-time, personalized homepage based on user preferences and reading history.
+Support text search across historical news articles.
+
+Non-Functional Requirements
+High Availability for Reads: Users expect instant feed generation.
+Low Latency Ingestion: Breaking news should appear on the platform within minutes of publication.Scalability: 
+System must handle $10^5+$ news sources and millions of concurrent active readers.
+
+Architecture:
+
++---------------------------------------+
+                  |            News Sources               |
+                  |     (RSS Feeds, Sites, Webpages)       |
+                  +-------------------+-------------------+
+                                      |
+                                      v
+                        +-------------+-------------+
+                        |     Distributed Crawlers  |
+                        +-------------+-------------+
+                                      |
+                                      v
+                        +-------------+-------------+
+                        |        Kafka Queue        |
+                        +-------------+-------------+
+                                      |
+                     +----------------+----------------+
+                     |                                 |
+                     v                                 v
+        +------------+------------+       +------------+------------+
+        |   Parser & Normalizer   |       |   ML Enrichment Worker  |
+        +------------+------------+       +------------+------------+
+                     |                                 |
+                     v                                 v
+        +------------+------------+       +------------+------------+
+        |   Document DB (MongoDB) |       |  Vector DB (pgvector)   |
+        +------------+------------+       +------------+------------+
+                     |                                 |
+                     +----------------+----------------+
+                                      |
+                                      v
+                        +-------------+-------------+
+                        |    Feed Generation Worker |
+                        +-------------+-------------+
+                                      |
+                                      v
+                        +-------------+-------------+
+                        |      Redis Cache Layer    |
+                        +-------------+-------------+
+                                      |
+                                      v
+                        +-------------+-------------+
+                        |        API Gateway        |
+                        +-------------+-------------+
+                                      |
+                                      v
+                               [ End Users ]
+
+The Ingestion Pipeline (Write Path)
+Distributed Crawler Infrastructure: A fleet of workers continuously polling registered RSS endpoints, sitemaps, and raw HTML pages. 
+It manages polite crawling rates using a centralized coordinator (like Apache ZooKeeper) to ensure individual news servers are not overloaded.
+Message Broker (Apache Kafka): Incoming raw article payloads are published to a Kafka topic. This acts as a buffer to protect downstream parsing engines 
+from sudden spikes during major breaking news cycles.
+Parser & Normalizer Service: Consumes from Kafka, strips away messy HTML boilerplate (ads, navbars), and structures the clean content into a standardized 
+JSON format: title, author, body_text, publish_timestamp, and source_url.
+
+2. Processing & Storage Layer
+Primary Document Store (e.g., MongoDB or Amazon DynamoDB): Stores the raw, structured article records. This data layer is heavily partition-keyed on publish_date
+to make old news archiving straightforward.
+Search Index (Elasticsearch / OpenSearch): Ingests the article tokens to support fast text-based keyword search across topics, locations, and organizations.
+
+3.3. Topic Clustering & Deduplication (The Intelligence Layer)
+An aggregator becomes messy if 50 different outlets publish the exact same Associated Press wire article on your homepage.
+Exact Deduplication: Compute an MD5 or SHA-256 hash of the cleaned article body. If the hash matches an entry already in the primary database from the last 24 hours, 
+discard the duplicate or link it as a syndication.
+Near-Deduplication (MinHash / LSH): For articles that are almost identical but have minor text edits, we use a MinHash algorithm combined with Locality-Sensitive Hashing (LSH)
+to identify high Jaccard similarity scores without running expensive $O(N^2)$ comparisons.
+Semantic Clustering (Vector DB Component): To group different articles covering the same event (e.g., BBC writing about a launch and CNN writing about the same launch), 
+pass the text through an embedding model. Store the resulting embeddings in a vector store like pgvector or Qdrant. 
+Run an online clustering algorithm (like Leader-Driven Clustering) to group incoming vector points into unique "Story IDs" based on cosine similarity thresholds.
+
+Feed Generation & Personalization (Read Path)
+Generating a feed on demand for every user visit is computationally expensive due to the matrix multiplications required for machine-learning-based rankings. 
+Instead, we compute feeds asynchronously using a Hybrid Fan-Out Strategy.
+[ New Grouped Story ] ---> [ Fan-Out Worker ] ---> [ Compute Rank Score ] 
+                                                           |
+                                                           v
+[ User Active Feed ] <--- [ Read Cache ] <--- [ Append to Redis Min-Heap ]
+
+1. Pre-Computing Global Hotness
+For anonymous users or generic categories (e.g., "Technology"), a background worker pre-calculates standard trending feeds every 60 seconds.
+
+2. Personalized Fan-Out
+For authenticated users with specific preferences:When a high-impact story cluster is formed, a worker identifies which user segments or topic tags
+match this content.The system computes a personalized match score and inserts the story ID into the user's dedicated feed cache—stored as a Redis Sorted Set (ZSET), 
+where the score is the computed ranking value.When the user opens the app, the system fetches their pre-computed ZSET from Redis in O(log N + M) time, resulting in sub-50ms render latencies.
+A Redis ZSET is powered by a dual-structure architecture: a Hash Table combined with a Skip List
+Phase 1: The $O(log N)$ Search StepRedis uses the skip list's higher express lanes to fast-travel across the dataset. It compares your query constraints against
+the nodes until it pinpoints the exact starting element of your requested range.Because it skips exponentially large groups of elements at each step, 
+finding this starting point scales logarithmically with the total size of the user's feed (N).
+Phase 2: The O(M) Retrieval StepOnce Redis has used the express lanes to drop its pointer directly onto the correct starting node at the bottom layer, 
+it drops down to the base linked list.From there, it doesn't need to jump anymore. It simply walks sequentially along the pointers from left to right, collecting 
+exactly M elements (the specific chunk size you requested, such as the top 20 stories for Page 1 of the feed). Collecting M items sequentially takes 
+linear time relative to the page size: $O(M)$.
+Why this Matters for System DesignWhen designing high-throughput systems like a news feed, 
+this mathematical distinction is critical:N is the Total Feed Volume: A user might have $1,000$ stories total stored in their backlog pool (N=1000). Because log_2(1000) approx 10, 
+finding the start of the page requires only about 10 computational hops.M is the Page Size: You only return 20 items to the mobile screen (M=20).Because O(log N) is extremely small and flat, 
+and $M$ is tightly bounded by pagination limits, the overall operation completes in a fraction of a millisecond.
+
+Handling System Constraints & Key Challenges
+How to Scale Metadata Filtering
+  If a user changes their feed settings to "Show me breaking news from the US, but filter out anything related to sports," a naive vector search can break or return poor results.
+  
+  The Architecture Choice: Use a database configuration that supports single-stage/native filtering (like Qdrant or pgvector with structured indexes). This ensures the metadata 
+  constraint (Category != Sports) is checked during the graph traversal step of the vector search, guaranteeing you get back the correct number of relevant results without losing graph connectivity.
+
+The Embedding Model Upgrades Pitfall
+  If you decide to upgrade your internal topic categorization embedding model from an old version to a faster, highly precise new model, your existing vector database index instantly becomes incompatible.
+  
+  The Migration Pattern: You must spin up a parallel vector database cluster. Write a migration script that reads the raw historical articles from your primary Document DB, runs them through the new
+  embedding model, and populates the new vector index. Keep both paths running in parallel, perform an A/B test on your clustering accuracy, and 
+  then switch your API Gateway traffic over before tearing down the old vector database cluster.
