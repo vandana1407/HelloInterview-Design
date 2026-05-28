@@ -52,3 +52,56 @@ you might inadvertently erase bits that are also shared by other items in your s
 If you keep stuffing elements into the filter without expanding it, the array will slowly become mostly 1s, causing the false positive rate to degrade toward $100\%$.
 3. Non-Scalable Memory Size: A traditional Bloom filter is static. You must allocate the bit array size upfront based on your projected peak capacity. 
 If your dataset grows $10\times$ beyond your estimate, you have to build a new, larger Bloom filter from scratch and re-hash your entire historical database into it.
+
+
+Count Min Sketch - 
+A Count-Min Sketch is a sub-linear, probabilistic data structure used to estimate the frequencies of elements in a massive data stream.
+
+If a Bloom Filter answers a binary "Have I seen this?" question, a Count-Min Sketch answers a frequency question: 
+"How many times have I seen this item?" It does this using a tiny, fixed amount of memory, making it an essential tool for big data processing and real-time streaming architectures.
+You need to keep track of how many times every IP address or hashtag appears so you can find the "heavy hitters" (the top IP traffic or top trends).
+
+The Naive Approach: Use a standard Hash Map (Map<String, Integer>). Every time a hashtag appears, increment its count.
+  The Problem: If there are hundreds of millions of unique hashtags, your hash map will eventually run out of RAM, causing the application to crash.
+The Count-Min Sketch Approach: You use a tiny, two-dimensional array of integers in memory. It tracks frequencies by routing elements through multiple hash functions.
+  It never underestimates the frequency of an item. (Zero underestimation).
+  It may overestimate the frequency of an item due to hash collisions.
+
+how it works - 
+A Count-Min Sketch consists of a two-dimensional grid of counters with a width $w$ and a depth $d$:The Grid Matrix: 
+A table of dimensions d * w filled with integer counters, initially all set to 0.
+Hash Functions: A set of d distinct pairwise independent hash functions. Each row in the matrix is mapped to exactly one unique hash function.
+
+Incrementing an element - 
+You pass $x$ through each of the $d$ hash functions.Hash function 1 tells you which column to look at in Row 1. 
+You increment that specific counter by 1.Hash function 2 tells you which column to look at in Row 2. 
+You increment that counter by 1.You repeat this down through all $d$ rows.
+
+Query the element - 
+Pass $x$ through the same $d$ hash functions to locate its associated counter in each row.
+Read the values of all d counters.Take the absolute minimum value among all those counters. This minimum value is your estimated frequency.
+
+Why do we take the Minimum?
+Because multiple items map to the same grid locations, hash collisions will artificially inflate the counters. For instance, 
+a high-frequency item might collide with "NVIDIA" in Row 1, inflating the count at Matrix[0][5].
+
+However, because the hash functions are independent, it is highly unlikely that the same interfering item will collide with "NVIDIA" across all rows. 
+Therefore, the row with the lowest value represents the path with the least collision noise, yielding the closest approximation to the true frequency.
+use cases - 
+1. Identifying Top-K Heavy Hitters (Trending Topics)
+2. Network Traffic & DDoS Mitigation - To detect a Distributed Denial of Service (DDoS) attack, the router must track packet frequencies per IP address. A Count-Min Sketch allows
+the router to instantly identify if an IP address is hitting it 50,000 times a second without running out of hardware memory.
+3. Cache Management (TinyLFU in Caffeine Cache) - High-performance system caching engines use a Count-Min Sketch to track incoming item access frequencies. 
+If the cache is full and needs to evict an item,
+it queries the sketch to see which item is accessed less frequently across history, maximizing the cache hit ratio while keeping memory footprint under a few kilobytes.
+
+Pitfalls and Limitations
+1. Saturated Matrix Error Over Time: As the stream runs continuously, counters only go up. 
+If a stream runs indefinitely, the matrix will eventually saturate, causing every query to drastically overestimate frequencies.
+Fix - The Fix: Implement a Aging / Decay Mechanism. Periodically (e.g., every 5 minutes or every 100,000 items), divide all counters in the grid by 2. 
+      This decays old historical counts, naturally prioritizing recent frequency trends.
+2. Bad for Low-Frequency Queries: While a Count-Min Sketch is exceptional at measuring highly frequent items, it is notoriously inaccurate for rare or low-frequency items. 
+The collision noise from heavy-hitter elements will easily bleed into the slots of rare elements, making them appear far more frequent than they actually are.
+3. No Way to Retrieve the Keys: The sketch stores counts, not names. You cannot iterate over a Count-Min Sketch to print out a list of all hashtags inside it. It can only answer questions
+about keys you explicitly provide to it. This is why it must be paired with an auxiliary structure (like a Min-Heap) if your objective is to list the top trends.
+
