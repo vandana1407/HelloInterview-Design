@@ -186,3 +186,74 @@ The Fix: Modern implementations use HyperLogLog++ (developed by Google).
 It detects small cardinalities and automatically falls back to utilizing linear counting or basic explicit sets until the data reaches a threshold where the core HLL algorithm stabilizes.
 2. No Object Retrieval: HyperLogLog stores maximum zero counts inside structural registers, completely destroying the original data. 
 You cannot ask HyperLogLog to output a list of the actual user IDs or usernames that visited your site. It can only tell you the total number of unique visitors.
+
+
+
+95th percentile  - 
+What is the 95th percentile ($p95$) of application response latency - 
+p95 means that 95 of all application requests are faster than this value, while the remaining 5 are slower.
+To find the $p95$ latency, the system takes those 100 response times and sorts them in an array from fastest to slowest:
+The First 95 Requests (Fastest): These represent the normal, healthy experience for $95\%$ of your user base.
+The 95th Request: The exact time taken by this specific request is your $p95$ threshold (e.g., 250ms).The Last 5 Requests (Slowest): 
+These are the worst-performing requests (the "long tail" or outliers), taking anywhere from 500ms to 10 seconds due to network hiccups, database timeouts, or server load.
+
+Approximate Quantiles sketch
+The Naive Approach: Store every single latency value (e.g., millions of requests per second) in an array, sort it, and pick the value at index 0.99 times N.
+The Problem: Keeping millions of floating-point numbers in memory or writing them to a database continuously 
+will quickly consume all your RAM and disk I/O, crashing your monitoring tool.
+The Approximate Quantiles Approach: You compress incoming numbers on the fly into smart, dynamic clusters.
+To save massive amounts of memory, these structures guarantee that a quantile query (like p99) will be accurate within a strict precision threshold (e.g., 0.1 error).
+
+2. How it Works (Using the T-Digest Algorithm)
+Instead of saving every individual number, a T-Digest groups nearby data points into fluid, moving clusters called Centroids. Each centroid tracks two things:
+The mean value of the points inside it.
+The weight (the total number of data points it represents).
+
+Centroids near the minimum and maximum edges of the dataset are forced to be very small 
+(sometimes representing just a single data point). This preserves extreme precision for outliers.
+Centroids near the center/median of the distribution are allowed to grow very large, swallowing thousands of points because slight approximation errors
+in the middle of a bell curve don't heavily distort your percentiles.
+
+Ingesting Data
+As a continuous stream of values arrives:
+The algorithm finds the closest existing centroid to the new value.
+If adding the new value doesn't violate the size constraint for that centroid's position, the value is absorbed. The centroid's mean is 
+recalculated dynamically, and its weight increases by 1.
+If the centroid is already "full" based on its position in the distribution, a brand new centroid is initialized for that value.
+
+Centroids at the extreme ends (the minimums and maximums) must be tiny, while centroids in the middle can be massive.At the edges (p0.1 or p99.9): 
+The maximum weight allowed for a centroid might be just 1 or 2. The algorithm refuses to group numbers together here, forcing the sketch to remember the exact values 
+of your worst-case outliers.
+In the center (p50 / the median): The allowed weight explodes. It will happily let a single centroid swallow 50,000 points because when millions of users are getting 
+a standard 10ms response time,
+Ingesting a New Data Point
+When a new number arrives in the stream (e.g., a new user API request takes 250ms):The sketch scans its sorted list of existing centroids to find 
+the one whose Mean is closest to 250ms.It checks the rule: "If I add this new point to this centroid, will its weight exceed the size limit for this part of the scale?
+"If No: It absorbs the point. The weight increments by 1, and the mean shifts slightly to accommodate the new number.
+If Yes: (Because it's at the strict p99 edge), the sketch refuses to merge them. It creates a brand-new, independent centroid right at 250ms with a weight of 1.
+
+Querying a Quantile : When you request a percentile (e.g., the $p95$ value):
+The algorithm sorts the small collection of centroids by their mean values.It iterates through the weights to find where the 95th percentile mark falls.
+
+Querying the Percentile (e.g., Finding p95)When you ask the system, "What is our p95 latency right now?", 
+it executes a quick calculation:It lays out all the centroids in a straight line, sorted by their Mean values from lowest to highest.
+It sums up all the Weights to find the total number of points processed (let's say the total weight is 100,000).It counts through the weights until it hits the 95% mark (the 95,000th point).
+If the 95,000th point falls right between Centroid A (Mean = 240ms) and Centroid B (Mean = 260ms), it uses standard linear interpolation 
+(a mathematical straight-line estimate) between those two points to confidently return an answer like 244.5ms.
+
+Use cases:
+1. SLA Monitoring and Alerts (DevOps & Infrastructure)
+An average latency metric is deceptive—if 90% of your users experience a 10ms load time but 10% experience a 10-second timeout, 
+the average looks healthy, but your customers are leaving. Tracking $p95$ and $p99$ using a quantile sketch catches these issues instantly.
+2. Database Query Optimization (Histograms)
+Modern distributed execution engines use quantile sketches to build data distribution histograms for partition columns. Knowing where the $p25, p50,$ and $p75$
+boundaries reside allows a database planner to distribute workloads evenly across cluster nodes, preventing data skew.
+
+
+how it uses only kilobytes of memory - 
+a T-Digest is locked to a maximum of around 100 to 500 centroids, completely regardless of whether you feed it 1,000 numbers or 10,000,000,000 numbers.
+a centroid doesn't store lists of data; it only stores two floating-point numbers. - 
+Mean (mu): Stored as a 64-bit float (double) = 8 bytes    Weight (W): Stored as a 64-bit float (double) = 8 bytes
+so total 16 bytes.
+When you initialize a quantile sketch, you pass it a precision parameter called the Compression Factor (generally 200). number of centraoids created is 2* 200 = 400
+Total Bytes = 400 centroids times 16bytes/centroid = 6,400 bytes = 6.5KB.
