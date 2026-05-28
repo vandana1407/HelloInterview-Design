@@ -67,6 +67,13 @@ The Count-Min Sketch Approach: You use a tiny, two-dimensional array of integers
   It never underestimates the frequency of an item. (Zero underestimation).
   It may overestimate the frequency of an item due to hash collisions.
 
+low memory  
+Depth ($d$): The number of rows (which equals the number of independent hash functions). A standard configuration to minimize hash collisions is 5 rows.
+Width (w): The number of columns (slots per row). To get a highly precise estimation on massive streams, a standard width is 2,000 columns.
+This gives us a total grid matrix size of:Total Counters = 5 { rows} times 2,000 { columns} = 10,000 individual counters
+each counter in the grid is stored as a standard 32-bit integer (int), which takes up exactly 4 bytes of physical memory.
+Total Bytes = 10,000  counters times 4 bytes/counter = 40,000 bytes = 40KB.
+
 how it works - 
 A Count-Min Sketch consists of a two-dimensional grid of counters with a width $w$ and a depth $d$:The Grid Matrix: 
 A table of dimensions d * w filled with integer counters, initially all set to 0.
