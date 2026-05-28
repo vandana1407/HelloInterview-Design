@@ -152,6 +152,26 @@ Each of these 2,048 buckets is allocated exactly 6 bits of memory space.Total Me
 To convert bits to kilobytes:$12,288  bits div 8 = 1,536 bytes
 1,536  bytes div 1,024 = 1.5 KB
 
+how it determined how many DAU - 
+The probability of a random hash starting with 5 zeros is $\frac{1}{2^5} = \frac{1}{32}$." Therefore, this single bucket expects that roughly 
+32 unique items have been processed to hit that streak.If we generalize this, if a bucket holds a maximum zero-count of R, the raw estimated number of unique items seen by that bucket
+is:Raw Estimate = 2^R
+Why One Bucket Isn't Enough (The Fluke Problem)If you only look at one bucket, your estimate will be wildly inaccurate.Imagine the very first user visits your website. 
+Their ID hashes to a string that randomly happens to start with 15 zeros purely by luck (a 1-in-32,768 chance). If you only had one bucket, it would instantly jump to 15, 
+and your system would incorrectly claim you have 2^{15} = 32,768 users when you actually only have one.
+To fix this, HyperLogLog divides your users across 2,048 independent buckets using the first 11 bits of their hash string.
+Combining the Buckets (The Harmonic Mean)
+Once all users are processed, HyperLogLog looks at the values in all 2,048 buckets. 
+Instead of taking a normal average, it uses the Harmonic Mean.
+A normal average (arithmetic mean) is easily ruined by a single "lucky" high number. The harmonic mean is a special mathematical average that heavily 
+punishes huge outlier flukes while favoring the typical values in the group.
+The Final Translation (The Magic Constant)Now we have an incredibly stable, fluke-resistant average of our exponential data. 
+To turn this back into a human-readable estimate of unique users, HyperLogLog performs a final two-step calculation:
+Step A: Scaling by Number of BucketsFirst, it multiplies the combined average by the total number of buckets m. 
+This scales the estimate from "how many unique users went into each bucket" to "how many unique users hit the entire database":Scaled Estimate = m times Combined Average
+Step B: Applying the Correction Factor alpha_m Because hashing and bucketing introduce a small, mathematically predictable bias, the result will
+always be slightly off by a fixed ratio. To correct this, the algorithm multiplies the scaled estimate by a precise calibration constant called alpha_m. For 2,048 buckets, alpha_m = approx 0.7213.
+
 Use-Cases and Pitfalls
 1. Daily / Monthly Active Users (DAU / MAU)
 2. Real-Time Ad Campaign Performance
