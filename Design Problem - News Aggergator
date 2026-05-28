@@ -125,3 +125,88 @@ The Embedding Model Upgrades Pitfall
   The Migration Pattern: You must spin up a parallel vector database cluster. Write a migration script that reads the raw historical articles from your primary Document DB, runs them through the new
   embedding model, and populates the new vector index. Keep both paths running in parallel, perform an A/B test on your clustering accuracy, and 
   then switch your API Gateway traffic over before tearing down the old vector database cluster.
+
+schema design for dynamo db - 
+articles collection
+{
+  "_id": "art_9x8f23k1a",
+  "story_id": "story_20260528_tech004",
+  "url": "https://techcrunch.com/2026/05/28/nvidia-chip-announcement",
+  "title": "NVIDIA Unveils Next-Gen B300 Architecture",
+  "source_name": "TechCrunch",
+  "body_text": "Today at the conference, NVIDIA officially announced...",
+  "publish_date": "2026-05-28",
+  "publish_timestamp": 1774724400,
+  "language": "en",
+  "author": "Jane Doe",
+  "metadata": {
+    "geo_locations": ["Santa Clara", "California"],
+    "organizations": ["NVIDIA", "TSMC"],
+    "categories": ["Technology", "AI", "Hardware"]
+  }
+
+story_cluster collection - 
+{
+  "_id": "story_20260528_tech004",
+  "headline_article_id": "art_9x8f23k1a",
+  "category": "Technology",
+  "created_timestamp": 1774692000,
+  "last_updated_timestamp": 1774735200,
+  "status": "ARCHIVED",
+  "summary": "NVIDIA launched its new B300 chip architecture targeting massive data centers, partnering with TSMC for manufacturing.",
+  "top_keywords": ["NVIDIA", "B300", "Semiconductor", "AI"],
+  "article_counts": 42,
+  "representative_vector_sample": [0.0124, -0.0843, 0.3129] 
+}
+
+Indexing - 
+compound indexes - 
+Index 1: The Historical Timeline Query (Compound Index)
+When users browse archives, they usually look for news within a specific category, sorted by date.
+The Index: { category: 1, publish_timestamp: -1 }
+
+Index 2: The Multi-Tenant Organization/Topic Tracker (Compound Index)
+To power dashboards tracking a specific entity over time (e.g., "Show me all articles mentioning NVIDIA from October 2025"):
+The Index: { "metadata.organizations": 1, "publish_date": -1 }
+
+Index 3: Optimizing the Real-Time Path (Partial / Sparse Index)
+When the active ingestion pipeline is looking for unarchived elements to update, 
+searching through 5 years of historical data slows down the system. We create a Partial Index that only references active clusters.
+Why it works: The physical size of this index remains miniscule (only containing a few hundred rows instead of millions). 
+The ingestion workers scan it incredibly fast, completely ignoring the archived historical noise.
+
+3. Data Archiving and Tiering Pattern
+To keep database performance flat over time, we use a Hot/Cold Storage Tiering pattern.
+1. Hot Tier (0 to 90 Days)
+Live in MongoDB/DynamoDB with the full indices defined above.
+Serves direct user traffic, API routes, mobile application timelines, and real-time text searches.
+2. Cold Tier (90+ Days old)
+A background cron job runs at midnight, selecting articles older than 90 days, formatting them into highly compressed Apache Parquet columnar files, 
+and saving them into an object storage layer like Amazon S3.
+The raw body text is deleted from the active Document DB, leaving only a lightweight metadata stub (title, url, date, story_id).
+If a researcher or data scientist needs to run a historical batch analysis over 3 years of old text, AWS Athena runs query on directly against the compressed Parquet files in S3
+
+API Gateway acts as the first line of defense, employing a combination of Edge Caching, Rate Limiting, and Request Collapsing.
+[ Massive User Traffic Spike ] 
+              |
+              v
+     +--------+--------+
+     +   API Gateway   +  <--- Rate Limiting & Request Collapsing
+     +--------+--------+
+              |
+              v
+     +--------+--------+
+     |   Redis Cache   |  <--- Short-TTL Edge Caching (99% Hit Rate)
+     +--------+--------+
+              |  (Cache Miss)
+              v
++-------------+-------------+
+|    Primary Document DB    |  <--- Kept completely safe from spikes
+
+
+GET /api/v1/feeds/trending/technology
+
+Even with caching, you face a major vulnerability called a Cache Stampede (or Thundering Herd problem). 
+This happens at the exact millisecond a popular cache entry expires. If 5,000 concurrent requests land right when the cache is empty, 
+all 5,000 will attempt to read from the database at the exact same moment to rebuild the cache, crushing the database.
+The API Gateway mitigates this using Request Collapsing
