@@ -105,3 +105,58 @@ The collision noise from heavy-hitter elements will easily bleed into the slots 
 3. No Way to Retrieve the Keys: The sketch stores counts, not names. You cannot iterate over a Count-Min Sketch to print out a list of all hashtags inside it. It can only answer questions
 about keys you explicitly provide to it. This is why it must be paired with an auxiliary structure (like a Min-Heap) if your objective is to list the top trends.
 
+
+HyperLogLog - 
+A HyperLogLog (HLL) is a fixed-space, probabilistic data structure used to estimate the cardinality of a set—specifically, 
+the number of unique elements (distinct values) in a massive dataset or stream.
+If a Bloom Filter answers "Have I seen this?" and a Count-Min Sketch answers 
+"How many times have I seen this?", HyperLogLog answers the question: "How many unique items are in this collection?"
+
+Intuition
+software engineer at a platform like YouTube or Netflix, and you need to calculate the number of unique daily active users (DAUs) watching videos.
+1. The Naive Approach: Store every user ID in a standard HashSet or run a COUNT(DISTINCT user_id) query in a SQL database.
+The Problem: If you have 500 million unique users, keeping a hash set of 500 million strings will consume gigabytes of RAM
+2. The HyperLogLog Approach: Instead of storing the actual user IDs, you hash incoming user IDs
+  It uses less than 1.5 KB of memory to count billions of unique items.
+  It returns an estimate with a configurable standard error rate (typically around 1\% to 2\%).
+
+How it Works
+Step 1: The Hash Function Converts Data to Bits
+When a user ID arrives (e.g., "user_104"), HyperLogLog passes it through a 64-bit hash function. This turns the text into a completely random-looking sequence of 0s and 1s.
+
+Step 2: Splitting the Hash (Bucketing)To prevent a single "lucky" element from throwing off the entire count, HyperLogLog divides the work across multiple registers (called Buckets).It uses the first few bits of the hash string to decide which bucket this user belongs to.If we use the first
+4 bits for bucketing, we have 2^4 = 16 possible buckets.Looking at our hash: 0010 is the binary representation of the number 2.Therefore, this user's data will be routed to Bucket #2.
+
+Step 3: Counting the Leading Zeros
+Now, HyperLogLog looks at the remaining bits of the hash string and counts how many consecutive 0s appear before hitting the first 1. This is where the coin-flipping logic happens.
+Our remaining hash string starts with: 1000 0000 1101...
+The very first bit is a 1.
+This means there are 0 leading zeros.
+What if a second user ("user_992") hashes to a string that puts them in Bucket #2 as well, but their remaining string looks like this?
+0001 1100 0101...
+This string has 3 leading zeros before hitting a 1.
+
+Step 4: Updating the BucketEach bucket only stores one single number: the maximum number of leading zeros it has ever seen.Initially, Bucket #2 holds the value 0.When the first user arrives
+(0 leading zeros), Bucket #2 stays at 0.When the second user arrives (3 leading zeros), HyperLogLog compares them. Since $3 > 0$, it overwrites the bucket. Bucket #2 now holds the number 3.
+
+Step 5: Calculating the Total EstimateWhen you ask HyperLogLog for the total unique count, it doesn't look at the users (it already threw their names away). 
+It only looks at the numbers inside its 16 buckets.If most buckets are holding low numbers 
+like 0, 1, or 2, the math knows that very few unique users have visited.However, if it looks across the buckets and sees a few holding high numbers like 10 or 12,
+the laws of probability state that you must have processed a massive amount of unique data to accidentally generate a hash string starting with 12 consecutive zeros
+(1  in 4096 chance).
+A standard HyperLogLog can use just 12,288 bits (1.5 KB) of total memory to keep track of billions of distinct items.
+
+Use-Cases and Pitfalls
+1. Daily / Monthly Active Users (DAU / MAU)
+2. Real-Time Ad Campaign Performance
+Ad networks must track the number of unique impressions or clicks a specific ad receives across millions of concurrent users. 
+Assigning a tiny 1.5 KB HyperLogLog sketch to each individual ad allows the system to scale tracking to millions of active campaigns simultaneously without memory strain.
+3. 3. Database Query Optimizers
+Modern relational databases (like PostgreSQL) and data warehouses use HyperLogLog underneath the hood to rapidly calculate column statistics (data distribution cardinality).
+
+1. Inaccurate for Small Datasets: The harmonic mean formulas used by HLL are optimized for large-scale limits. 
+On small datasets (e.g., fewer than a couple thousand unique items), standard HLL formulas produce severe estimation errors.
+The Fix: Modern implementations use HyperLogLog++ (developed by Google). 
+It detects small cardinalities and automatically falls back to utilizing linear counting or basic explicit sets until the data reaches a threshold where the core HLL algorithm stabilizes.
+2. No Object Retrieval: HyperLogLog stores maximum zero counts inside structural registers, completely destroying the original data. 
+You cannot ask HyperLogLog to output a list of the actual user IDs or usernames that visited your site. It can only tell you the total number of unique visitors.
