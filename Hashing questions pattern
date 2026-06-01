@@ -16,6 +16,6 @@ public int solve(ArrayList<Integer> A, int B) {
         }
         return subArrayCount;
     }
-
+this is o(n) complexity solution), else we have n2 complexity one where we find all subarrays and then calculate its xor, etc.
 
 2. 
