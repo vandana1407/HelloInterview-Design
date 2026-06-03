@@ -1,8 +1,11 @@
-1. we use to start from bottom right to top left in finding max area for rectangle - 
+1. we use to start from bottom right to top left in finding max area for rectangle -  hint is find submatrix
 as that we will be o(n*m)  if otherwise we use kadanae's or start from top left we get complexity 0(n2 *m2).
 
 various questions based on kadane's method - o(n2*m) - uses hist
 https://www.interviewbit.com/problems/max-rectangle-in-binary-matrix/
+
+use - reverse dp - o(n*m) method - 
+https://www.interviewbit.com/problems/kingdom-war/
 
 
 2. dungen priness has hint that start at bottom and reach to top - 
