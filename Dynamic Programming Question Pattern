@@ -1,4 +1,11 @@
 1. we use to start from bottom right to top left in finding max area for rectangle - 
 as that we will be o(n*m)  if otherwise we use kadanae's or start from top left we get complexity 0(n2 *m2).
 
-2. 
+various questions based on kadane's method - o(n2*m) - uses hist
+https://www.interviewbit.com/problems/max-rectangle-in-binary-matrix/
+
+
+2. dungen priness has hint that start at bottom and reach to top - 
+Write a function to determine the knight’s minimum initial health so that he is able to rescue the princess.
+as asking for returning initial health and princess is right bottom square.
+so we start from bottom amd reach first - and return 1st square value.
