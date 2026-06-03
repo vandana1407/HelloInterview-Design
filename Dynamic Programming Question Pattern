@@ -1,0 +1,4 @@
+1. we use to start from bottom right to top left in finding max area for rectangle - 
+as that we will be o(n*m)  if otherwise we use kadanae's or start from top left we get complexity 0(n2 *m2).
+
+2. 
