@@ -3,6 +3,7 @@ as that we will be o(n*m)  if otherwise we use kadanae's or start from top left 
 
 various questions based on kadane's method - o(n2*m) - uses hist
 https://www.interviewbit.com/problems/max-rectangle-in-binary-matrix/
+https://www.interviewbit.com/problems/largest-area-of-rectangle-with-permutations/
 
 use - reverse dp - o(n*m) method - 
 https://www.interviewbit.com/problems/kingdom-war/
