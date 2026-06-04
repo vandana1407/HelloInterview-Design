@@ -13,3 +13,17 @@ https://www.interviewbit.com/problems/kingdom-war/
 Write a function to determine the knight’s minimum initial health so that he is able to rescue the princess.
 as asking for returning initial health and princess is right bottom square.
 so we start from bottom amd reach first - and return 1st square value.
+
+3. https://www.interviewbit.com/problems/sub-matrices-with-sum-zero/
+this is a patthern where we are using row compression and hashmap to bring complexity to o(col2*row)
+
+first we have left col and right col loops - o(col2) complexity
+the we have row compression - that is o(row) , but is separate loop , 
+then we have submatrix checking which is again o(row) complexity but is separate from 1st one , 
+so overall complexity is o(col2 * row).
+
+for understanding how the submatrix prefix sum works
+[3, -1, -2 , 5, -5, 2]
+this has [3, -1, -2], [5, -5], [3,-1, -2, 5, -5], [-2, 5, -5, 2]  s0 4 ways.
+
+
