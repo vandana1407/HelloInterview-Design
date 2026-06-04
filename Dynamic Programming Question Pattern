@@ -45,3 +45,12 @@ and then we calculate dp values.
 example - https://www.interviewbit.com/problems/potions/
 
 
+5. https://www.interviewbit.com/problems/unique-binary-search-trees-ii/
+find number of trees - 
+same as chords with point problem.
+sart with dp[0]
+dp[1]
+and then build for 2 to n values.
+
+
+
