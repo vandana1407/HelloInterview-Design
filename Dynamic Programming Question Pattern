@@ -38,3 +38,10 @@ examples - https://www.interviewbit.com/problems/tushars-birthday-party/
 https://www.interviewbit.com/problems/flip-array/
 
 
+4.split dp problem - 
+in which we have i as size taken from 2 to n
+and then j and k elements taken to split the array to subarrays 
+and then we calculate dp values.
+example - https://www.interviewbit.com/problems/potions/
+
+
