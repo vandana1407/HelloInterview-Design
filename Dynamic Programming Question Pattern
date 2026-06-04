@@ -26,4 +26,15 @@ for understanding how the submatrix prefix sum works
 [3, -1, -2 , 5, -5, 2]
 this has [3, -1, -2], [5, -5], [3,-1, -2, 5, -5], [-2, 5, -5, 2]  s0 4 ways.
 
+3. knapsack problem
+j col = sum
+i col is individual values
+
+we make dp n+1 and sum+1
+and then go over 
+if we can repeat values then we do dp[i][j-a.get(i)]  when j>=a.get(i), else we do dp[i-1][j-a.get(i)]
+and then we find min from dp[i-1][j] and this value and populate dp[i][j].
+examples - https://www.interviewbit.com/problems/tushars-birthday-party/
+https://www.interviewbit.com/problems/flip-array/
+
 
