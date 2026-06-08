@@ -1,3 +1,13 @@
 1. https://www.interviewbit.com/problems/longest-palindromic-substring/hints/
 this looks like a dp problem , dp solves this in o(n2) time and space o(n2)
 we have a better solution, we can use here with o(n2) +o(1) space complexity.
+
+2. solution salutes - 
+https://www.interviewbit.com/problems/salutes/
+
+3. Integer to roman
+https://www.interviewbit.com/courses/programming/strings/#problems/
+
+4. roman to interger
+https://www.interviewbit.com/problems/roman-to-integer/
+
