@@ -49,6 +49,45 @@ https://www.interviewbit.com/problems/counting-subarrays/
 
 4. counting sbarrays with distinct intregers - 
 https://www.interviewbit.com/problems/subarrays-with-distinct-integers/
+The logic behind why we can calculate p = i - start + 1 without explicitly checking if the map size is exactly $B$ (or $B-1$) 
+comes down to how the sliding window functions mathematically when counting "at most" conditions.
+i - start + 1  Actually Represents  = When the execution leaves the while loop, the inner pointer start 
+has adjusted to ensure the current window from start to i is valid. A valid window means its number of distinct integers is $\le B$.
+Why is it okay to count it? Because in the second half of your code, you calculate $\text{AtMost}(B-1)$, which is $\text{AtMost}(2)$. 
+That second loop will also process index i, find that [1, 2, 1, 2] has $\le 2$ distinct elements, and add those exact same subarrays to count2
+By calculating p = i - start + 1 unconditionally, you are blindly counting everything that is $\le B$. By doing it a second time for $\le B-1$ and subtracting, 
+the math automatically isolates the subarrays that have exactly $B$ distinct integers, completely eliminating the need for an explicit conditional check inside the loops.
 
-5. 
+5. diff between 3 sorted arrys
+{Maximize }(|A[i] - B[j]|, |B[j] - C[k]|, |C[k] - A[i]|) If you sort three numbers—let's call them $a$, $b$, and $c$ such that a<= b <=c—
+the largest absolute difference between any pair will always simply be the difference between the largest number and the smallest number: $(c - a)$.
+Therefore, the problem reduces to: Find a triplet $(a, b, c)$ containing one number from each array such that {Max}(a,b,c) - {Min}(a,b,c) is minimized.
+public int minimize(final List<Integer> A, final List<Integer> B, final List<Integer> C) {
+    int i = 0, j = 0, k = 0;
+    int minDiff = Integer.MAX_VALUE;
 
+    while (i < A.size() && j < B.size() && k < C.size()) {
+        int a = A.get(i);
+        int b = B.get(j);
+        int c = C.get(k);
+
+        int maxVal = Math.max(a, Math.max(b, c));
+        int minVal = Math.min(a, Math.min(b, c));
+
+        // Update the minimum difference found so far
+        minDiff = Math.min(minDiff, maxVal - minVal);
+
+        // To minimize the difference, we must move the pointer 
+        // pointing to the SMALLEST value forward.
+        if (minVal == a) {
+            i++;
+        } else if (minVal == b) {
+            j++;
+        } else {
+            k++;
+        }
+    }
+
+    return minDiff;
+}
+https://www.interviewbit.com/problems/array-3-pointers/hints/
