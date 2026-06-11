@@ -1,2 +1,4 @@
 1. https://www.interviewbit.com/problems/stepping-numbers/
 stepping numbers
+
+if(p<b) ensures that no unnecessary adding to queue happens once number become greater than b
