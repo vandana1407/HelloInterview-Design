@@ -91,3 +91,69 @@ public int minimize(final List<Integer> A, final List<Integer> B, final List<Int
     return minDiff;
 }
 https://www.interviewbit.com/problems/array-3-pointers/hints/
+
+Graphs
+1. water flow  - 
+https://www.interviewbit.com/problems/water-flow/hints/
+here we have 
+public class Solution {
+    public int solve(ArrayList<ArrayList<Integer>> A) {
+        int m = A.size();
+        int n = A.get(0).size();
+        int[][] visitedRed = new int[m][n];
+        int[][] visitedBlue = new int[m][n];
+        int result = 0;
+        
+        //left
+        for(int i=0;i<m;i++){
+            dfsSearch(i,0,visitedBlue,A,-100);
+        }
+        
+        //top
+        for(int i=1;i<n;i++){
+            dfsSearch(0,i,visitedBlue,A,-100);
+        }
+        
+        //right
+        for(int i=0;i<m;i++){
+            dfsSearch(i,n-1,visitedRed,A,-100);
+        }
+        
+        //bottom
+        for(int i=0;i<n-1;i++){
+            dfsSearch(m-1,i,visitedRed,A,-100);
+        }
+        
+        for(int i=0;i<m;i++){
+            for(int j=0;j<n;j++){
+                // System.out.print(visitedBlue[i][j]);
+                if(visitedRed[i][j]==1 && visitedBlue[i][j]==1) result++;
+            }
+            // System.out.print(" ");
+        }
+        return result;
+    }
+    
+    public void dfsSearch(int x,int y,int[][] visited, ArrayList<ArrayList<Integer>> A,int val){
+        int m = A.size();
+        int n = A.get(0).size();
+        if(x<0 || y<0 || y>=n ||x>=m) return;
+        if(val>A.get(x).get(y)) return;
+        if(visited[x][y]==1) return;
+        visited[x][y] = 1;
+        
+        dfsSearch(x-1,y,visited,A,A.get(x).get(y));
+        dfsSearch(x,y-1,visited,A,A.get(x).get(y));
+        dfsSearch(x+1,y,visited,A,A.get(x).get(y));
+        dfsSearch(x,y+1,visited,A,A.get(x).get(y));
+        
+        return;
+        
+    }
+
+why we have  - if(val>A.get(x).get(y)) return;
+However, if you start at the lake and try to find a path up to the middle of the continent, the logic reverses:Water 
+flows from $A$ to $B$ if $Height(A) \ge Height(B)$.Therefore, if you are at $B$ (the lake) and want to see if $A$ can flow to you, you must have $Height(B) \le Height(A)$.
+}
+
+we have 
