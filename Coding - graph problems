@@ -78,4 +78,10 @@ public class Solution {
         return currentSubtreeSum;
     }
 }
+
+
+3. two teams - 
+https://www.interviewbit.com/problems/two-teams/
+hint - bipartie graph
+
   
