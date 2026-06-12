@@ -13,3 +13,69 @@ If a component can reach Node 1, it means Node 1 is part of that component's cyc
 If a component cannot reach Node 1, it means that component is trapped in its own independent cycle somewhere else.
 
 Therefore, to make every node good, we must break every cycle that does not contain Node 1 and point it to Node 1 instead.
+
+3. delete edge - 
+https://www.interviewbit.com/problems/delete-edge/hints/
+first we find sum of tree and then subtract subtree 1 to get subtree2 weight
+this is optimized solution of o(n).
+We can get the sum of other tree by subtracting sum of one subtree from the total sum of tree
+Product = SubtreeSum * (TotalSum - SubtreeSum)
+
+public class Solution {
+    int mod=(int)1e9+7;
+    private long totalSum = 0;
+    private long maxProduct = 0;
+
+    public int deleteEdge(ArrayList<Integer> A, ArrayList<ArrayList<Integer>> B) {
+        int V = A.size();
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) {
+            adj.add(new ArrayList<>());
+        }
+
+        for (int i = 0; i < B.size(); i++) {
+            int u = B.get(i).get(0) - 1;
+            int v = B.get(i).get(1) - 1;
+            adj.get(u).add(v);
+            adj.get(v).add(u);
+        }
+
+        // Calculate the absolute total sum of the entire tree first
+        for (int weight : A) {
+            totalSum += weight;
+        }
+
+        // Run DFS to compute true products dynamically
+        boolean[] visited = new boolean[V];
+        dfs(0, adj, visited, A);
+
+        long MOD = 1000000007;
+        return (int) (maxProduct % MOD);
+    }
+
+    private long dfs(int node, ArrayList<ArrayList<Integer>> adj, boolean[] visited, ArrayList<Integer> A) {
+        visited[node] = true;
+        //this is used to store sum of subtree rooted at node.
+        long currentSubtreeSum = A.get(node);
+
+        for (int neighbor : adj.get(node)) {
+            if (!visited[neighbor]) {
+                currentSubtreeSum += dfs(neighbor, adj, visited, A);
+            }
+        }
+
+        // If this isn't the root node, evaluate the cut above this node
+        if (node != 0) {
+            long remainingSum = totalSum - currentSubtreeSum;
+            long currentProduct = currentSubtreeSum * remainingSum;
+            
+            // Compare true un-moduloed values safely
+            if (currentProduct > maxProduct) {
+                maxProduct = currentProduct;
+            }
+        }
+
+        return currentSubtreeSum;
+    }
+}
+  
