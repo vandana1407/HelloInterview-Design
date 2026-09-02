@@ -54,6 +54,32 @@ This can be used for a variety of use cases, such as triggering Lambda functions
 maintaining a replica of the database in another system, or building real-time analytics applications.
 DynamoDB Streams can be used to keep an Elasticsearch index in sync with a DynamoDB table. This is useful for building search functionality on top of DynamoDB data.
 
+Dynamo DB
+Amazon DynamoDB is a fully managed, serverless NoSQL database service provided by AWS that delivers single-digit millisecond performance at any scale. 
+It uses a key-value and document data model, allowing developers to build decoupled, highly available applications without managing servers, 
+provisioning clusters, or handling database replication.
+
+
+Core Architecture & Features
+Key-Value & Document Model: Data is organized into tables containing items (rows) and attributes (columns). 
+Tables use a Partition Key (PK) or a composite Partition Key + Sort Key (SK) to store and index data.
+Built-in Replication: DynamoDB automatically replicates data synchronously across three Availability Zones (AZs) within 
+an AWS Region to ensure high durability and fault tolerance.
+Serverless & Autoscaling: Supports both On-Demand Capacity (scales automatically based on traffic) and Provisioned Capacity (configured Read/Write Capacity Units, 
+or RCUs/WCUs).
+Secondary Indexes:
+Global Secondary Indexes (GSI): Indexes with a partition/sort key that can differ from the base table, allowing flexible queries across the entire dataset.
+Local Secondary Indexes (LSI): Indexes that share the same partition key as the base table but use a different sort key.
+DynamoDB Streams: Captures an ordered sequence of item-level modifications in real time, making it seamless to trigger AWS Lambda functions or feed downstream systems (event-driven architectures).
+Global Tables: Provides fully managed, multi-region active-active replication for globally distributed applications requiring local read/write performance.
+Common Use Cases
+High-Throughput Web & Mobile Apps: Session management, user profiles, shopping carts, and preference stores.
+Gaming & Leaderboards: Tracking player states, game inventories, and real-time scores.
+IoT & Event Logging: High-velocity sensor ingestion, telemetry tracking, and append-only time-series datasets.
+Serverless Architectures: Pairings with AWS Lambda, API Gateway, and EventBridge where instantaneous database cold-starts and RESTful SDK access are required.
+
+
+
 doff between dynam db and cassandra - 
 The biggest difference is that Cassandra is write optimized (LSM) while Dynamo is read optimized (BTree).
 Cassandra's support for 2nd index is not very good.
